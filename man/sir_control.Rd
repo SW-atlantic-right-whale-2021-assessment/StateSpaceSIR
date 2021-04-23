@@ -4,8 +4,13 @@
 \alias{sir_control}
 \title{Set parameters for SIR}
 \usage{
-sir_control(K_bisect_lims = c(1, 5e+05), K_bisect_tol = 1e-04,
-  threshold = 1e-17, progress_bar = FALSE, verbose = 0)
+sir_control(
+  K_bisect_lims = c(1, 5e+05),
+  K_bisect_tol = 1e-04,
+  threshold = 1e-17,
+  progress_bar = FALSE,
+  verbose = 0
+)
 }
 \arguments{
 \item{K_bisect_lims}{Bounds for K when performing the bisection method of

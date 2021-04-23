@@ -4,8 +4,18 @@
 \alias{LOGISTIC.BISECTION.K}
 \title{LOGISTIC BISECTION}
 \usage{
-LOGISTIC.BISECTION.K(K.low, K.high, r_max, z, num_Yrs, start_yr,
-  target.Pop, catches, MVP, tol = 0.001)
+LOGISTIC.BISECTION.K(
+  K.low,
+  K.high,
+  r_max,
+  z,
+  num_Yrs,
+  start_yr,
+  target.Pop,
+  catches,
+  MVP,
+  tol = 0.001
+)
 }
 \arguments{
 \item{K.low}{Lower bound for $K$ when preforming the bisection method of Punt

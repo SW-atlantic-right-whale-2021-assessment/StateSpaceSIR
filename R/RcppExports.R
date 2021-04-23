@@ -46,7 +46,7 @@
 #' MVP  <-  0
 #' GENERALIZED_LOGISTIC(r_max, K, N1, z, start_yr, num_Yrs, catches)
 GENERALIZED_LOGISTIC <- function(r_max, K, N1, z, start_yr, num_Yrs, catches, MVP) {
-    .Call(`_HumpbackSIR_GENERALIZED_LOGISTIC`, r_max, K, N1, z, start_yr, num_Yrs, catches, MVP)
+    .Call(`_StateSpaceSIR_GENERALIZED_LOGISTIC`, r_max, K, N1, z, start_yr, num_Yrs, catches, MVP)
 }
 
 #' Adjusted lognormal likelihood from Zerbini et al. 2011 (eq. 5)
@@ -61,6 +61,6 @@ GENERALIZED_LOGISTIC <- function(r_max, K, N1, z, start_yr, num_Yrs, catches, MV
 #'
 #' @return A vector of densities.
 dlnorm_zerb <- function(x, meanlog, sdlog, return_log = TRUE) {
-    .Call(`_HumpbackSIR_dlnorm_zerb`, x, meanlog, sdlog, return_log)
+    .Call(`_StateSpaceSIR_dlnorm_zerb`, x, meanlog, sdlog, return_log)
 }
 

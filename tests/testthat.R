@@ -1,4 +1,4 @@
 library(testthat)
-library(HumpbackSIR)
+library(StateSpaceSIR)
 
-test_check("HumpbackSIR")
+test_check("StateSpaceSIR")

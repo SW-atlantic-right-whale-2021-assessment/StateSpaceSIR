@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // GENERALIZED_LOGISTIC
 List GENERALIZED_LOGISTIC(double r_max, double K, double N1, double z, double start_yr, double num_Yrs, NumericVector catches, double MVP);
-RcppExport SEXP _HumpbackSIR_GENERALIZED_LOGISTIC(SEXP r_maxSEXP, SEXP KSEXP, SEXP N1SEXP, SEXP zSEXP, SEXP start_yrSEXP, SEXP num_YrsSEXP, SEXP catchesSEXP, SEXP MVPSEXP) {
+RcppExport SEXP _StateSpaceSIR_GENERALIZED_LOGISTIC(SEXP r_maxSEXP, SEXP KSEXP, SEXP N1SEXP, SEXP zSEXP, SEXP start_yrSEXP, SEXP num_YrsSEXP, SEXP catchesSEXP, SEXP MVPSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,7 +25,7 @@ END_RCPP
 }
 // dlnorm_zerb
 NumericVector dlnorm_zerb(NumericVector x, NumericVector meanlog, NumericVector sdlog, bool return_log);
-RcppExport SEXP _HumpbackSIR_dlnorm_zerb(SEXP xSEXP, SEXP meanlogSEXP, SEXP sdlogSEXP, SEXP return_logSEXP) {
+RcppExport SEXP _StateSpaceSIR_dlnorm_zerb(SEXP xSEXP, SEXP meanlogSEXP, SEXP sdlogSEXP, SEXP return_logSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -39,12 +39,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_HumpbackSIR_GENERALIZED_LOGISTIC", (DL_FUNC) &_HumpbackSIR_GENERALIZED_LOGISTIC, 8},
-    {"_HumpbackSIR_dlnorm_zerb", (DL_FUNC) &_HumpbackSIR_dlnorm_zerb, 4},
+    {"_StateSpaceSIR_GENERALIZED_LOGISTIC", (DL_FUNC) &_StateSpaceSIR_GENERALIZED_LOGISTIC, 8},
+    {"_StateSpaceSIR_dlnorm_zerb", (DL_FUNC) &_StateSpaceSIR_dlnorm_zerb, 4},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_HumpbackSIR(DllInfo *dll) {
+RcppExport void R_init_StateSpaceSIR(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

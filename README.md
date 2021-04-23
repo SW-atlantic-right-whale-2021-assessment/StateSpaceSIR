@@ -1,4 +1,4 @@
-# HumpbackSIR
+# StateSpaceSIR
 This is a package to implement a deterministic generalized logistic model in a Bayesian framework using a Sampling-Importance-Resampling (SIR) algorithm developed for modelling Humpback Whale populations by Zerbini et al. (2011) and Zerbini et al (2019). The SIR algorithm follows that implemented by McAllister et al. (1994).
 
 Code and data to run the analysis in Zerbini et al (2019) can be found at: https://github.com/antarctic-humpback-2019-assessment/HumpbackRuns
@@ -20,12 +20,12 @@ More information on the model can be found in Zerbini et al. (2011) and Zerbini 
 To install the model the following code can be ran:
 ```{r}
 library(devtools)
-devtools::install_github(repo = "antarctic-humpback-2019-assessment/HumpbackSIR")
+devtools::install_github(repo = "SW-atlantic-right-whale-2021-assessment/StateSpaceSIR")
 ```
 
 An example of how the model can be run is:
 ```{r}
-library(HumpbackSIR)
+library(StateSpaceSIR)
 
 # Load data from 2011 assessment
 data("Abs.Abundance.2005") # Absolute abundance data
@@ -90,7 +90,7 @@ zerbini_table( sirMod, file_name = NULL )
 
 # 2011 Example figures
 Estimated population trajectory and time series of catches of WSA humpback whales from Zerbini et al. (2011). The gray line represents the model averaged median trajectory, and the dark and light shaded areas correspond, respectively, to the 50% and 95% confidence intervals. The dashed black line represents the median trajectory of the reference case scenario, and the red line represents the catches, with shaded areas corresponding to uncertainty in the pre-modern whaling catches. The model is fit to the absolute abundance estimates in 2005 (black dots with confidence interval) and the model predicted abundance estimates in the same year (offset gray dots with confidence interval).
-![alt text](https://github.com/antarctic-humpback-2019-assessment/HumpbackSIR/blob/master/data-raw/Example/2011_Zerbini/Zerbini_et_al_2011_trajectory_summary.png "Population trajectory")
+![alt text](https://github.com/antarctic-humpback-2019-assessment/StateSpaceSIR/blob/master/data-raw/Example/2011_Zerbini/Zerbini_et_al_2011_trajectory_summary.png "Population trajectory")
 
 # References
 McAllister, M. K., Pikitch, E. K., Punt, A. E., Hilborn, R. 1994. A Bayesian approach to stock assessment and harvest decisions using the sampling/importance resampling algorithm. Canadian Journal of Fisheries and Aquatic Sciences. 12, 2673-2687. 

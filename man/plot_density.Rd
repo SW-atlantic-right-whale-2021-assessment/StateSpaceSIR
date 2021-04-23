@@ -4,8 +4,15 @@
 \alias{plot_density}
 \title{OUTPUT FUNCTION}
 \usage{
-plot_density(SIR, file_name = NULL, lower = NULL, upper = NULL,
-  priors = NULL, inc_reference = TRUE)
+plot_density(
+  SIR,
+  file_name = NULL,
+  lower = NULL,
+  upper = NULL,
+  priors = NULL,
+  inc_reference = TRUE,
+  probs = c(0.025, 0.975)
+)
 }
 \arguments{
 \item{SIR}{A fit SIR model or list of SIR models. Plots in the order provided.}
@@ -18,6 +25,8 @@ function. If NULL, does not save.}
 \item{upper}{Vector of upper bounds for x-axis}
 
 \item{priors}{Default = NULL, SIR realized priors or list of SIR realized priors. Plots in the order provided.}
+
+\item{probs}{Lower and upper quantiles to use for plot limits if lower and upper are not specified.}
 
 \item{reference}{Default = NULL, wether reference case is included in SIR}
 }

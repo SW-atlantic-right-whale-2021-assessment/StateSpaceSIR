@@ -4,8 +4,7 @@
 \alias{PREDICT.IAs}
 \title{Predict indices of abundance}
 \usage{
-PREDICT.IAs(rel.abundance, Pred_N, start_yr, q.values, add.CV,
-  log = TRUE)
+PREDICT.IAs(rel.abundance, Pred_N, start_yr, q.values, add.CV, log = TRUE)
 }
 \arguments{
 \item{SIR}{SIR object}

@@ -4,8 +4,15 @@
 \alias{LNLIKE.BEACHED}
 \title{Calculate the log-likelihood of the beach whale data}
 \usage{
-LNLIKE.BEACHED(beached_data, Pred_N, start_yr, q_anthro, d_anthro,
-  p_anthro, log = TRUE)
+LNLIKE.BEACHED(
+  beached_data,
+  Pred_N,
+  start_yr,
+  q_anthro,
+  d_anthro,
+  p_anthro,
+  log = TRUE
+)
 }
 \arguments{
 \item{beached_data}{Data on whale strandingsas a data.frame

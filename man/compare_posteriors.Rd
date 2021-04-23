@@ -4,9 +4,15 @@
 \alias{compare_posteriors}
 \title{Function to compare posters}
 \usage{
-compare_posteriors(SIR, model_names = NULL, file_name = NULL,
-  bayes_factor = NULL, reference_sir = TRUE, model_average = TRUE,
-  years = NULL)
+compare_posteriors(
+  SIR,
+  model_names = NULL,
+  file_name = NULL,
+  bayes_factor = NULL,
+  reference_sir = TRUE,
+  model_average = TRUE,
+  years = NULL
+)
 }
 \arguments{
 \item{SIR}{list of SIR objects}

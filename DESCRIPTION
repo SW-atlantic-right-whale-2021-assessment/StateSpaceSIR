@@ -1,21 +1,22 @@
-Package: HumpbackSIR
+Package: StateSpaceSIR
 Type: Package
-Title: Use Sample-Importance-Resampling to Estimate Southern Humpback Abundance
+Title: Use Sample-Importance-Resampling to Estimate Southwestern Atlantic Right Whale Abundance
 Version: 1.0.0.0000
 Authors@R: c(
-    person("John", "Best", email = "jkbest@gmail.com", role = c("cre", "aut")),
-    person("Grant", "Adams", email = "adamsgd@uw.edu", role = "aut"),
-    person("Alexandre", "Zerbini", role = "aut"))
+    person("Grant", "Adams", email = "adamsgd@uw.edu", role = c("cre", "aut")),
+    person("John", "Best", email = "jkbest@gmail.com", role = "aut"))
 Description: Combine multiple sources of data to estimate the abundance
-    of Humpback whales (Megaptera novaeangliae) in the Southern Ocean.
+    of Right whales in the Southwestern Atlantic Ocean.
     Uses Sample-Importance-Resampling to draw samples from the
     posterior distribution.
 License: What license is it under?
-URL: https://github.com/jkbest2/HumpbackSIR
-BugReports: https://github.com/jkbest2/HumpbackSIR/issues
+URL: https://github.com/SW-atlantic-right-whale-2021-assessment/StateSpaceSIR
+BugReports: https://github.com/SW-atlantic-right-whale-2021-assessment/StateSpaceSIR/issues
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp (>= 0.12.16),
-    latex2exp
+Imports: 
+    Rcpp (>= 0.12.16),
+    latex2exp,
+    invgamma
 LinkingTo: Rcpp
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1

@@ -4,8 +4,7 @@
 \alias{make_prior}
 \title{Generate a prior for use in the Humpback SIR}
 \usage{
-make_prior(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE,
-  label = NULL)
+make_prior(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE, label = NULL)
 }
 \arguments{
 \item{rfn}{Function to be used to generate samples from the prior

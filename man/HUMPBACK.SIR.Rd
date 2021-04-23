@@ -5,17 +5,27 @@
 \title{HUMPBACK SIR controls the sampling from the priors, the bisection and
 likelihoods and the output functions}
 \usage{
-HUMPBACK.SIR(file_name = "NULL", n_resamples = 1000,
+HUMPBACK.SIR(
+  file_name = "NULL",
+  n_resamples = 1000,
   priors = make_prior_list(),
   catch_multipliers = make_multiplier_list(),
   premodern_catch_multipliers = make_multiplier_list(),
-  target.Yr = 2008, num.haplotypes = 66, output.Yrs = c(2008),
-  abs.abundance = Abs.Abundance, rel.abundance = Rel.Abundance,
-  rel.abundance.key = TRUE, count.data = NULL,
-  count.data.key = FALSE, growth.rate.obs = c(0.074, 0.033, TRUE),
-  growth.rate.Yrs = c(1995, 1996, 1997, 1998), catch.data = Catch.data,
-  premodern_catch_data = NULL, realized_prior = FALSE,
-  control = sir_control())
+  target.Yr = 2008,
+  num.haplotypes = 66,
+  output.Yrs = c(2008),
+  abs.abundance = Abs.Abundance,
+  rel.abundance = Rel.Abundance,
+  rel.abundance.key = TRUE,
+  count.data = NULL,
+  count.data.key = FALSE,
+  growth.rate.obs = c(0.074, 0.033, TRUE),
+  growth.rate.Yrs = c(1995, 1996, 1997, 1998),
+  catch.data = Catch.data,
+  premodern_catch_data = NULL,
+  realized_prior = FALSE,
+  control = sir_control()
+)
 }
 \arguments{
 \item{file_name}{name of a file to identified the files exported by the
