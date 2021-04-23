@@ -29,6 +29,8 @@ using namespace Rcpp;
 //' @param catches The time series of catch in numbers or biomass. Currently does
 //'   not handle NAs and zeros will have to input a priori for years in which
 //'   there were no catches.
+//' @param proc_error The time series of lognormal process errors. Currently does
+//'   not handle NAs and zeros.
 //' @param MVP The minimum viable population size in numbers or biomass. Computed
 //'   as 4 * \code{\link{num.haplotypes}} to compute minimum viable population
 //'   (from Jackson et al., 2006 and IWC, 2007).
@@ -41,9 +43,10 @@ using namespace Rcpp;
 //' r_max  <-  0.2
 //' K  <-  1000
 //' N1  <-  K
-//' catches  <-  round(runif(10, min = 0, max = 150 ), 0 )
+//' catches  <-  round(runif(num_Yrs, min = 0, max = 150 ), 0 )
+//' proc_error  <-  rep(1, num_Yrs-1)
 //' MVP  <-  0
-//' GENERALIZED_LOGISTIC(r_max, K, N1, z, start_yr, num_Yrs, catches)
+//' GENERALIZED_LOGISTIC(r_max, K, N1, z, start_yr, num_Yrs, catches, proc_error, MVP)
 // [[Rcpp::export]]
 List GENERALIZED_LOGISTIC(
         double r_max,
@@ -53,6 +56,7 @@ List GENERALIZED_LOGISTIC(
         double start_yr,
         double num_Yrs,
         NumericVector catches,
+        NumericVector proc_error,
         double MVP ) {
 
     // 1. Setup
@@ -62,7 +66,7 @@ List GENERALIZED_LOGISTIC(
 
     // 2. Run through population dynamics
     for (int t = 1; t < num_Yrs; t++){
-        n_hat[t] = n_hat[t - 1] + r_max * n_hat[t - 1] * (1 - pow(n_hat[t - 1] / K, z) ) - catches[t - 1] ;
+        n_hat[t] = (n_hat[t - 1] + r_max * n_hat[t - 1] * (1 - pow(n_hat[t - 1] / K, z) ) - catches[t - 1]) * proc_error[t-1];
         if(n_hat[t] < 1){
             n_hat[t] = 1;               // Make sure the population is positive
         }

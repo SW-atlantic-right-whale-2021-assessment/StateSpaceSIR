@@ -38,6 +38,7 @@ make_prior <- function(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE, label = N
                                "rlnorm" = "Log-normal",
                                "runif"  = "Uniform",
                                "rlunif" = "Log-uniform",
+                               "rinvgamma" = "Inverse-gamma",
                                "User defined")
             label <- paste0(dist_lab, "(", par1, ", ", par2, ")")
         }
@@ -79,6 +80,7 @@ rlunif <- function(n, min = 1, max = 2) {
 ##' @param r_max Population growth rate; defaults to Uniform(0, 0.106).
 ##' @param K Carrying capacity, defaults to unused, and solution found using
 ##'   recent observation and sampled \code{r_max}.
+##' @param var_N Variance of lognormal (logmean = 0) population process error: defaults to 0 where no process error occurs.
 ##' @param N_obs Prior on a recent abundance estimate. Defaults to Uniform(500,
 ##'   20,000).
 ##' @param add_CV Defaults to unused. Additional variability.
@@ -93,6 +95,7 @@ rlunif <- function(n, min = 1, max = 2) {
 ##'   can be used by the SIR function.
 make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
                             K = make_prior(use = FALSE),
+                            var_N = make_prior(0),
                             N_obs = make_prior(runif, 500, 40000),
                             add_CV = make_prior(use = FALSE),
                             premodern_catch_sample = make_prior(runif, 0, 1),
@@ -101,6 +104,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
                             q_count = make_prior(use = FALSE)) {
     list(r_max = r_max,
          K = K,
+         var_N = var_N,
          N_obs = N_obs,
          add_CV = add_CV,
          premodern_catch_sample = premodern_catch_sample,

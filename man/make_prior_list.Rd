@@ -7,6 +7,7 @@
 make_prior_list(
   r_max = make_prior(runif, 0, 0.118),
   K = make_prior(use = FALSE),
+  var_N = make_prior(0),
   N_obs = make_prior(runif, 500, 40000),
   add_CV = make_prior(use = FALSE),
   premodern_catch_sample = make_prior(runif, 0, 1),
@@ -20,6 +21,8 @@ make_prior_list(
 
 \item{K}{Carrying capacity, defaults to unused, and solution found using
 recent observation and sampled \code{r_max}.}
+
+\item{var_N}{Variance of lognormal (logmean = 0) population process error: defaults to 0 where no process error occurs.}
 
 \item{N_obs}{Prior on a recent abundance estimate. Defaults to Uniform(500,
 20,000).}

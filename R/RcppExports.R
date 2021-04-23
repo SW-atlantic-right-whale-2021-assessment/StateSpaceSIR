@@ -30,6 +30,8 @@
 #' @param catches The time series of catch in numbers or biomass. Currently does
 #'   not handle NAs and zeros will have to input a priori for years in which
 #'   there were no catches.
+#' @param proc_error The time series of lognormal process errors. Currently does
+#'   not handle NAs and zeros.
 #' @param MVP The minimum viable population size in numbers or biomass. Computed
 #'   as 4 * \code{\link{num.haplotypes}} to compute minimum viable population
 #'   (from Jackson et al., 2006 and IWC, 2007).
@@ -42,11 +44,12 @@
 #' r_max  <-  0.2
 #' K  <-  1000
 #' N1  <-  K
-#' catches  <-  round(runif(10, min = 0, max = 150 ), 0 )
+#' catches  <-  round(runif(num_Yrs, min = 0, max = 150 ), 0 )
+#' proc_error  <-  rep(1, num_Yrs-1)
 #' MVP  <-  0
-#' GENERALIZED_LOGISTIC(r_max, K, N1, z, start_yr, num_Yrs, catches)
-GENERALIZED_LOGISTIC <- function(r_max, K, N1, z, start_yr, num_Yrs, catches, MVP) {
-    .Call(`_StateSpaceSIR_GENERALIZED_LOGISTIC`, r_max, K, N1, z, start_yr, num_Yrs, catches, MVP)
+#' GENERALIZED_LOGISTIC(r_max, K, N1, z, start_yr, num_Yrs, catches, proc_error, MVP)
+GENERALIZED_LOGISTIC <- function(r_max, K, N1, z, start_yr, num_Yrs, catches, proc_error, MVP) {
+    .Call(`_StateSpaceSIR_GENERALIZED_LOGISTIC`, r_max, K, N1, z, start_yr, num_Yrs, catches, proc_error, MVP)
 }
 
 #' Adjusted lognormal likelihood from Zerbini et al. 2011 (eq. 5)

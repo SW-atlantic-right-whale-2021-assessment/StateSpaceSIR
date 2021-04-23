@@ -14,9 +14,10 @@ URL: https://github.com/SW-atlantic-right-whale-2021-assessment/StateSpaceSIR
 BugReports: https://github.com/SW-atlantic-right-whale-2021-assessment/StateSpaceSIR/issues
 Encoding: UTF-8
 LazyData: true
+Depends:
+    invgamma
 Imports: 
     Rcpp (>= 0.12.16),
-    latex2exp,
-    invgamma
+    latex2exp
 LinkingTo: Rcpp
 RoxygenNote: 7.1.1

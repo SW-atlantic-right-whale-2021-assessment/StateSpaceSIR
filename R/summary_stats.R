@@ -1,13 +1,13 @@
-#' Function to write tables of logistic model parameter and derived quantities for HumpbackSIR similar to Table 5 from Zerbini et al (2011).
+#' Function to write tables of logistic model parameter and derived quantities for StateSpaceSIR similar to Table 5 from Zerbini et al (2011).
 #'
-#' @param SIR Resample summary from hympbackSIR
+#' @param SIR Resample summary from StateSpaceSIR
 #' @param file_name Desired filename to where csv file will be saved. If NULL, will not save.
-zerbini_table <- function( SIR, file_name = NULL){
+summary_table <- function( SIR, file_name = NULL){
 
     # Vars of interest
     years <- sort(c( SIR$inputs$target.Yr, SIR$inputs$output.Years))
-    vars <- c("r_max", "K", "z", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years))
-    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
+    vars <- c("r_max", "K", "z", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years))
+    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$\\sigma^2$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
     pop_vars <- c("K", "Nmin", paste0("N", years))
     depletion_vars <- c("Max_Dep", paste0("status", years))
 
@@ -23,13 +23,13 @@ zerbini_table <- function( SIR, file_name = NULL){
     results[,8] <- sapply(x, function(x) length(unique(x)))
 
     # Format things
-    results[c(1,3),2:7] <- round(results[c(1,3),2:7], 3)
+    results[c(1,4),2:7] <- round(results[c(1,4),2:7], 3)
     results[which(vars %in% depletion_vars),2:7] <- round(results[which(vars %in% depletion_vars),2:7], 3)
     results[which(vars %in% pop_vars),2:7] <- format(round(results[which(vars %in% pop_vars),2:7], 0),big.mark=",",scientific=FALSE)
     results[,8] <- format(round(results[,8], 0),big.mark=",",scientific=FALSE)
 
     if(!is.null(file_name)){
-      write.csv(results, file = paste0(file_name, "_zerbini_table_5.csv"))
+      write.csv(results, file = paste0(file_name, "_summary_table.csv"))
     }
     return(results)
 }

@@ -50,6 +50,7 @@
 #' \code{
 #' make_prior_list(r_max = make_prior(runif, 0, 0.118),
 #'                 K = make_prior(use = FALSE),
+#'                 var_N = make_prior(0),
 #'                 N_obs = make_prior(runif, 500, 40000),
 #'                 add_CV = make_prior(use = FALSE),
 #'                 z = make_prior(2.39),
@@ -63,7 +64,7 @@
 #' @examples
 #'
 #' \dontrun{
-#' HUMPBACK.SIR(file_name = "test.N2005",
+#' StateSpaceSIR(file_name = "test.N2005",
 #'              n_resamples = 100,
 #'              priors = make_prior_list(),
 #'              catch_multipliers = make_multiplier_list(),
@@ -84,7 +85,7 @@
 #'              premodern_catch_data = NULL,
 #'              control = sir_control())
 #' }
-HUMPBACK.SIR <- function(file_name = "NULL",
+StateSpaceSIR <- function(file_name = "NULL",
                          n_resamples = 1000,
                          priors = make_prior_list(),
                          catch_multipliers = make_multiplier_list(),
@@ -197,7 +198,7 @@ HUMPBACK.SIR <- function(file_name = "NULL",
 
     #Creating output vectors
     #-------------------------------------
-    sir_names <- c("r_max", "K", "z", paste0("catch_multiplier_", 1:length(catch_multipliers)) ,
+    sir_names <- c("r_max", "K", "var_N", "z", paste0("catch_multiplier_", 1:length(catch_multipliers)) ,
                    paste0("premodern_catch_multiplier_", 1:length(premodern_catch_multipliers)),
                    "sample.N.obs", "add_CV", "sample_premodern_catch", "Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
@@ -257,6 +258,10 @@ HUMPBACK.SIR <- function(file_name = "NULL",
             sample.add_CV <- 0
         }
 
+        ## Sample from prior for variance of process error
+        sample.var_N <- priors$var_N$rfn()
+        sample.proc.error <- rlnorm(projection.Yrs-1, 0, sample.var_N) # Random process error
+
         ## Sample from prior for `z` (usually constant)
         sample.z <- priors$z$rfn()
 
@@ -277,16 +282,28 @@ HUMPBACK.SIR <- function(file_name = "NULL",
             q.sample.Count <- rep(-9999, length(unique(count.data$Index)))
         }
 
-        sample.K <- LOGISTIC.BISECTION.K(K.low = control$K_bisect_lim[1],
-                                         K.high = control$K_bisect_lim[2],
-                                         r_max = sample.r_max,
-                                         z = sample.z,
-                                         num_Yrs = bisection.Yrs,
-                                         start_yr = start_yr,
-                                         target.Pop = sample.N.obs,
-                                         catches = catches,
-                                         MVP = MVP,
-                                         tol = control$K_bisect_tol)
+        ## Conduct logistic bisection
+        sample.K <-  try(LOGISTIC.BISECTION.K(K.low = control$K_bisect_lim[1],
+                                              K.high = 1e8,
+                                              r_max = sample.r_max,
+                                              z = sample.z,
+                                              num_Yrs = bisection.Yrs,
+                                              start_yr = start_yr,
+                                              target.Pop = sample.N.obs,
+                                              catches = catches,
+                                              proc_error = sample.proc.error,
+                                              MVP = MVP,
+                                              tol = control$K_bisect_tol),
+                         silent = TRUE)
+
+        ## If population is too variable because of process error, give error and set likelihood to 0
+        if(class(sample.K) == "try-error"){
+            sample.K = 999
+            K.error = TRUE
+        } else{
+            sample.K = sample.K
+            K.error = FALSE
+        }
 
         #Computing the predicted abundances with the samples from the priors
         #----------------------------------------
@@ -297,6 +314,7 @@ HUMPBACK.SIR <- function(file_name = "NULL",
                                        start_yr = start_yr,
                                        num_Yrs = projection.Yrs,
                                        catches = catches,
+                                       proc_error = sample.proc.error,
                                        MVP = MVP)
 
 
@@ -334,7 +352,6 @@ HUMPBACK.SIR <- function(file_name = "NULL",
             }
         }
 
-        #browser()
 
         ## Calculate Analytical Qs if count.data.key is TRUE
         ## (NOT USED YET - AZerbini, Feb 2013)
@@ -419,6 +436,8 @@ HUMPBACK.SIR <- function(file_name = "NULL",
                     " Likelihood = ", Likelihood)
         }
 
+
+        ## If population fell below minimum viable population size, set likelihood to 0
         if (Pred_N$Violate_Min_Viable_Pop) {
             Likelihood <- 0
             if (control$verbose > 0) {
@@ -426,6 +445,13 @@ HUMPBACK.SIR <- function(file_name = "NULL",
             }
         }
 
+        ## If population was too variable because of process error, set likelihood to 0
+        if (K.error) {
+            Likelihood <- 0
+            if (control$verbose > 0) {
+                message("Population dynamics too variable on draw", draw)
+            }
+        }
 
 
         Cumulative.Likelihood <- Cumulative.Likelihood + Likelihood
@@ -452,6 +478,7 @@ HUMPBACK.SIR <- function(file_name = "NULL",
                 catch_trajectories[i+1,] <- catches
                 resamples_output[i+1,] <- c(sample.r_max,
                                             sample.K,
+                                            sample.var_N,
                                             sample.z,
                                             sample_catch_multiplier,
                                             sample_premodern_catch_multiplier,
@@ -644,6 +671,8 @@ COMPUTING.ROI <- function(data = data, Pred_N = Pred_N, start_yr = NULL) {
 #'   year in the catch series).
 #' @param target.Pop Target population size.
 #' @param catches Catch time series. Cannot include NAs,
+#' @param proc_error The time series of lognormal process errors. Currently
+#' does not handle NAs or 0s
 #' @param MVP Minimum Viable Population Size; `4 * num.haplotypes`
 #'
 #' @return Vector of differences between predicted population and target
@@ -655,7 +684,7 @@ COMPUTING.ROI <- function(data = data, Pred_N = Pred_N, start_yr = NULL) {
 #'          target.Pop=target.Pop, catches=catches, MVP=MVP)
 TARGET.K <- function(r_max, K, N1, z,
                      num_Yrs, start_yr,
-                     target.Pop, catches,
+                     target.Pop, catches, proc_error,
                      MVP = 0) {
 
     Pred_N <- GENERALIZED_LOGISTIC(r_max = r_max,
@@ -665,6 +694,7 @@ TARGET.K <- function(r_max, K, N1, z,
                                    start_yr = start_yr,
                                    num_Yrs = num_Yrs,
                                    catches = catches,
+                                   proc_error = proc_error,
                                    MVP = MVP)
     Pred_N$Pred_N[num_Yrs] - target.Pop
 }
@@ -695,6 +725,8 @@ TARGET.K <- function(r_max, K, N1, z,
 #' @param catches The time series of catch in numbers or biomass. Currently does
 #'   not handle NAs and zeros will have to input a priori for years in which
 #'   there were no catches.
+#' @param proc_error The time series of lognormal process errors. Currently
+#' does not handle NAs or 0s
 #' @param MVP The minimum viable population size in numbers or biomass. Computed
 #'   as 3 * \code{\link{num.haplotypes}} to compute minimum viable population
 #'   (from Jackson et al., 2006 and IWC, 2007).
@@ -706,7 +738,7 @@ TARGET.K <- function(r_max, K, N1, z,
 #' @examples
 #' LOGISTIC.BISECTION.K(K.low = 1, K.high = 100000, r_max = r_max, z = z,
 #'                      num_Yrs = bisection.Yrs, start_yr = start_yr,
-#'                      target.Pop = target.Pop, catches = catches, MVP = MVP,
+#'                      target.Pop = target.Pop, catches = catches, proc_error = proc_error, MVP = MVP,
 #'                      tol = 0.001)
 LOGISTIC.BISECTION.K <- function(K.low,
                                  K.high,
@@ -716,6 +748,7 @@ LOGISTIC.BISECTION.K <- function(K.low,
                                  start_yr,
                                  target.Pop,
                                  catches,
+                                 proc_error,
                                  MVP,
                                  tol = 0.001) {
     Kmin <- uniroot(TARGET.K,
@@ -728,6 +761,7 @@ LOGISTIC.BISECTION.K <- function(K.low,
                     start_yr = start_yr,
                     target.Pop = target.Pop,
                     catches = catches,
+                    proc_error = proc_error,
                     MVP = MVP)
     Kmin$root
 }

@@ -4,7 +4,18 @@
 \alias{TARGET.K}
 \title{Calculate a target K for the bisection method}
 \usage{
-TARGET.K(r_max, K, N1, z, num_Yrs, start_yr, target.Pop, catches, MVP = 0)
+TARGET.K(
+  r_max,
+  K,
+  N1,
+  z,
+  num_Yrs,
+  start_yr,
+  target.Pop,
+  catches,
+  proc_error,
+  MVP = 0
+)
 }
 \arguments{
 \item{r_max}{The maximum net recruitment rate ($r_{max}$).}
@@ -29,6 +40,9 @@ year in the catch series).}
 \item{target.Pop}{Target population size.}
 
 \item{catches}{Catch time series. Cannot include NAs,}
+
+\item{proc_error}{The time series of lognormal process errors. Currently
+does not handle NAs or 0s}
 
 \item{MVP}{Minimum Viable Population Size; `4 * num.haplotypes`}
 }

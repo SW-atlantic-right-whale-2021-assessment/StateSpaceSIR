@@ -13,6 +13,7 @@ LOGISTIC.BISECTION.K(
   start_yr,
   target.Pop,
   catches,
+  proc_error,
   MVP,
   tol = 0.001
 )
@@ -43,6 +44,9 @@ numbers, set as \code{sample.N.obs} sampled from \code{priors$N.obs}}
 not handle NAs and zeros will have to input a priori for years in which
 there were no catches.}
 
+\item{proc_error}{The time series of lognormal process errors. Currently
+does not handle NAs or 0s}
+
 \item{MVP}{The minimum viable population size in numbers or biomass. Computed
 as 3 * \code{\link{num.haplotypes}} to compute minimum viable population
 (from Jackson et al., 2006 and IWC, 2007).}
@@ -64,6 +68,6 @@ dependencies.
 \examples{
 LOGISTIC.BISECTION.K(K.low = 1, K.high = 100000, r_max = r_max, z = z,
                      num_Yrs = bisection.Yrs, start_yr = start_yr,
-                     target.Pop = target.Pop, catches = catches, MVP = MVP,
+                     target.Pop = target.Pop, catches = catches, proc_error = proc_error, MVP = MVP,
                      tol = 0.001)
 }
