@@ -254,7 +254,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 
         ## Sample from prior for variance of process error
         sample.var_N <- priors$var_N$rfn()
-        sample.proc.error <- rlnorm(projection.Yrs-1, 0, sample.var_N) # Random process error
+        sample.proc.error <- rlnorm(projection.Yrs-1, 0, sqrt(sample.var_N)) # Random process error
 
         ## Sample from prior for `z` or Pmsy (usually constant) if random
         if (priors$z$use) {
