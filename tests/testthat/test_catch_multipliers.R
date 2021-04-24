@@ -9,7 +9,7 @@ test_that("Default catch multiplier is equal to 1", {
 
 test_that("Number of catch mutipliers and sampling periods mismatch", {
     expect_error(
-        HUMPBACK.SIR(file_name = "test.N2005",
+      StateSpaceSIR(file_name = "test.N2005",
                      n_resamples = 100,
                      priors = make_prior_list(),
                      catch_multipliers = make_multiplier_list(make_prior(1),
@@ -24,7 +24,7 @@ test_that("Number of catch mutipliers and sampling periods mismatch", {
                      count.data.key = FALSE,
                      growth.rate.obs = c(0.074, 0.033, TRUE),
                      growth.rate.Yrs = c(1995, 1996, 1997, 1998),
-                     catch.data = Catch.data,
+                     catch.data = list(Catch.data),
                      control = sir_control(threshold = 5e-19)))
 })
 
@@ -43,8 +43,8 @@ test_that("Make catch multiplier can take multiple arguments", {
 
 test_that("Multiple catch time series annd multipliers work", {
   skip("Move into integrated SIR test")
-    Catch.data$Premodern <- rep(100, nrow(Catch.data))
-    sir <- HUMPBACK.SIR(file_name = "test.N2005",
+  Catch.data_list <- list(Catch.data, Catch.data)
+    sir <- StateSpaceSIR(file_name = "test.N2005",
                         n_resamples = 100,
                         priors = make_prior_list(),
                         catch_multipliers = make_multiplier_list(make_prior(1),
@@ -59,7 +59,7 @@ test_that("Multiple catch time series annd multipliers work", {
                         count.data.key = FALSE,
                         growth.rate.obs = c(0.074, 0.033, TRUE),
                         growth.rate.Yrs = c(1995, 1996, 1997, 1998),
-                        catch.data = Catch.data,
+                        catch.data = Catch.data_list,
                         control = sir_control(threshold = 1e-18,
                                               progress_bar = TRUE))
     expect_equal(sir$resamples_output$catch_multiplier_1, rep(1, 100))

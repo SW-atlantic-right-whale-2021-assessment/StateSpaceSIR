@@ -3,7 +3,7 @@ context("SIR")
 test_that("Example runs", {
   skip("Need new reference values")
   set.seed(48448)
-  sir <- HUMPBACK.SIR(file_name = "test.N2005",
+  sir <- StateSpaceSIR(file_name = "test.N2005",
                       n_resamples = 100,
                       priors = make_prior_list(),
                       catch_multipliers = make_multiplier_list(),
@@ -17,7 +17,7 @@ test_that("Example runs", {
                       count.data.key = FALSE,
                       growth.rate.obs = c(0.074, 0.033, TRUE),
                       growth.rate.Yrs = c(1995, 1996, 1997, 1998),
-                      catch.data = Catch.data,
+                      catch.data = list(Catch.data),
                       control = sir_control(threshold = 1e-18,
                                             progress_bar = TRUE))
   resample_summary <- summary_sir(sir$resamples_output)

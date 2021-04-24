@@ -10,7 +10,7 @@ StateSpaceSIR(
   n_resamples = 1000,
   priors = make_prior_list(),
   catch_multipliers = make_multiplier_list(),
-  premodern_catch_multipliers = make_multiplier_list(),
+  catch_parameters = make_multiplier_list(),
   target.Yr = 2008,
   num.haplotypes = 66,
   output.Yrs = c(2008),
@@ -22,7 +22,6 @@ StateSpaceSIR(
   growth.rate.obs = c(0.074, 0.033, TRUE),
   growth.rate.Yrs = c(1995, 1996, 1997, 1998),
   catch.data = Catch.data,
-  premodern_catch_data = NULL,
   realized_prior = FALSE,
   control = sir_control()
 )
@@ -40,8 +39,8 @@ Default is the default of \code{make_prior_list}. See details.}
 \item{catch_multipliers}{List of catch multipliers, generated using \link{make_multiplier_list}
 Can either be estimated or explicitly provided. Default is \code{make_multiplier_list}.}
 
-\item{premodern_catch_multipliers}{List of historic catch multipliers, generated using \link{make_multiplier_list}
-Can either be estimated or explicitly provided. Default is \code{make_multiplier_list}.}
+\item{catch_parameters}{List of samples, generated using \link{make_multiplier_list}. Default should be runif(0,1).
+Sample between high and low of each catch stream.}
 
 \item{target.Yr}{year of the target population estimate for the bisection
 method. Default is 2008}
@@ -75,9 +74,7 @@ growth rate is not included in the likelihood}
 \item{growth.rate.Yrs}{Years for which the growth.rate.obs were computed (as
 in Zerbini et al., 2011)}
 
-\item{catch.data}{R object containing the years and catches (see example)}
-
-\item{premodern_catch_data}{R object containing the years maximum and minimum premodern catches}
+\item{catch.data}{R list where each layer contains a data.frame of the Year, Min Catch, and Max Catch of that catch time-series.}
 
 \item{realized_prior}{Key to specify if realized prior is to be extracted. Default is FALSE.}
 
@@ -111,7 +108,7 @@ StateSpaceSIR(file_name = "test.N2005",
              n_resamples = 100,
              priors = make_prior_list(),
              catch_multipliers = make_multiplier_list(),
-             premodern_catch_multipliers = make_multiplier_list(),
+             catch_parameters = make_multiplier_list(),
              Klim = c(1, 500000),
              target.Yr = 2005,
              num.haplotypes = 0,
@@ -125,7 +122,6 @@ StateSpaceSIR(file_name = "test.N2005",
              growth.rate.obs = c(0.074, 0.033, TRUE),
              growth.rate.Yrs = c(1995, 1996, 1997, 1998),
              catch.data = Catch.data,
-             premodern_catch_data = NULL,
              control = sir_control())
 }
 }
