@@ -19,7 +19,7 @@
 ##'
 ##' @return A \code{list} containing the function \code{rfn} for generating a
 ##'   sample from the prior distribution, a vector \code{pars} containing the
-##'   parameters of the distribution, and a boolean \code{use} flag.
+##'   parameters of the distribution, a boolean \code{use} flag, and a \code{class} definition.
 ##' @export
 ##'
 ##' @examples
@@ -41,16 +41,19 @@ make_prior <- function(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE, label = N
                                "rinvgamma" = "Inverse-gamma",
                                "User defined")
             label <- paste0(dist_lab, "(", par1, ", ", par2, ")")
+            class <- "function"
         }
     } else if (is.numeric(rfn)) {
         fn <- function() rfn
         par1 <- rfn
         label <- paste0("Constant(", rfn, ")")
+        class <- "constant"
     } else {
         fn <- function() NA
         label <- "Not used"
+        class <- "Not used"
     }
-    list(rfn = fn, pars = c(par1, par2), use = use, label = label)
+    list(rfn = fn, pars = c(par1, par2), use = use, label = label, class = class)
 }
 
 
@@ -86,7 +89,12 @@ rlunif <- function(n, min = 1, max = 2) {
 ##' @param add_CV Defaults to unused. Additional variability.
 ##' @param catch_sample Defaults to unused. Samples between the minimum and maximum catch values.
 ##' @param z Defaults to constant 2.39. Shape parameter for generalized logistic
-##'   population dynamics function.
+##'   population dynamics function. Both z and Pmsy are
+##'   confounded and only one can be used. If \code{use = FALSE},
+##'    Pmsy is used.
+##' @param Pmsy Parameter that determines the level of depletion at MSY.
+##' Both z and Pmsy are confounded and only one can be used.
+##'  If \code{use = FALSE}, z is used.
 ##' @param q_IA Defaults to unused. Prior on q for indices of abundance. If
 ##'   \code{use = FALSE}, an analytic solution for q is used.
 ##' @param q_count Defaults to unused. Prior for q on counts.
@@ -100,6 +108,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
                             add_CV = make_prior(use = FALSE),
                             catch_sample = make_prior(runif, 0, 1),
                             z = make_prior(2.39),
+                            Pmsy = make_prior(use = FALSE),
                             q_IA = make_prior(use = FALSE),
                             q_count = make_prior(use = FALSE)) {
     list(r_max = r_max,
@@ -109,6 +118,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
          add_CV = add_CV,
          catch_sample = catch_sample,
          z = z,
+         Pmsy = Pmsy,
          q_IA = q_IA,
          q_count = q_count)
 }

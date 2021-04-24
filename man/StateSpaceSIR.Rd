@@ -10,7 +10,6 @@ StateSpaceSIR(
   n_resamples = 1000,
   priors = make_prior_list(),
   catch_multipliers = make_multiplier_list(),
-  catch_parameters = make_multiplier_list(),
   target.Yr = 2008,
   num.haplotypes = 66,
   output.Yrs = c(2008),
@@ -38,9 +37,6 @@ Default is the default of \code{make_prior_list}. See details.}
 
 \item{catch_multipliers}{List of catch multipliers, generated using \link{make_multiplier_list}
 Can either be estimated or explicitly provided. Default is \code{make_multiplier_list}.}
-
-\item{catch_parameters}{List of samples, generated using \link{make_multiplier_list}. Default should be runif(0,1).
-Sample between high and low of each catch stream.}
 
 \item{target.Yr}{year of the target population estimate for the bisection
 method. Default is 2008}
@@ -91,7 +87,9 @@ make_prior_list(r_max = make_prior(runif, 0, 0.118),
                 var_N = make_prior(0),
                 N_obs = make_prior(runif, 500, 40000),
                 add_CV = make_prior(use = FALSE),
+                catch_sample = make_prior(runif, 0, 1),
                 z = make_prior(2.39),
+                Pmsy = make_prior(use = FALSE),
                 q_IA = make_prior(use = FALSE),
                 q_count = make_prior(use = FALSE)
 
@@ -108,7 +106,6 @@ StateSpaceSIR(file_name = "test.N2005",
              n_resamples = 100,
              priors = make_prior_list(),
              catch_multipliers = make_multiplier_list(),
-             catch_parameters = make_multiplier_list(),
              Klim = c(1, 500000),
              target.Yr = 2005,
              num.haplotypes = 0,

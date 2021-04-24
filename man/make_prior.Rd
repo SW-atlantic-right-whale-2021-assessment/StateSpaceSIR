@@ -28,7 +28,7 @@ based on the function passed in \code{rfn} Recognizes \code{rnorm}
 \value{
 A \code{list} containing the function \code{rfn} for generating a
   sample from the prior distribution, a vector \code{pars} containing the
-  parameters of the distribution, and a boolean \code{use} flag.
+  parameters of the distribution, a boolean \code{use} flag, and a \code{class} definition.
 }
 \description{
 Convenient way to generate a prior that can be used to generate samples for

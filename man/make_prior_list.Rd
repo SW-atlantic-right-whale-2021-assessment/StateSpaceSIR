@@ -10,7 +10,9 @@ make_prior_list(
   var_N = make_prior(0),
   N_obs = make_prior(runif, 500, 40000),
   add_CV = make_prior(use = FALSE),
+  catch_sample = make_prior(runif, 0, 1),
   z = make_prior(2.39),
+  Pmsy = make_prior(use = FALSE),
   q_IA = make_prior(use = FALSE),
   q_count = make_prior(use = FALSE)
 )
@@ -28,8 +30,16 @@ recent observation and sampled \code{r_max}.}
 
 \item{add_CV}{Defaults to unused. Additional variability.}
 
+\item{catch_sample}{Defaults to unused. Samples between the minimum and maximum catch values.}
+
 \item{z}{Defaults to constant 2.39. Shape parameter for generalized logistic
-population dynamics function.}
+population dynamics function. Both z and Pmsy are
+confounded and only one can be used. If \code{use = FALSE},
+ Pmsy is used.}
+
+\item{Pmsy}{Parameter that determines the level of depletion at MSY.
+Both z and Pmsy are confounded and only one can be used.
+ If \code{use = FALSE}, z is used.}
 
 \item{q_IA}{Defaults to unused. Prior on q for indices of abundance. If
 \code{use = FALSE}, an analytic solution for q is used.}

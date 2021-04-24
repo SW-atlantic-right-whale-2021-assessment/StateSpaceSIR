@@ -52,6 +52,7 @@
 #'                 add_CV = make_prior(use = FALSE),
 #'                 catch_sample = make_prior(runif, 0, 1),
 #'                 z = make_prior(2.39),
+#'                 Pmsy = make_prior(use = FALSE),
 #'                 q_IA = make_prior(use = FALSE),
 #'                 q_count = make_prior(use = FALSE)
 #'
@@ -82,22 +83,22 @@
 #'              control = sir_control())
 #' }
 StateSpaceSIR <- function(file_name = "NULL",
-                         n_resamples = 1000,
-                         priors = make_prior_list(),
-                         catch_multipliers = make_multiplier_list(),
-                         target.Yr = 2008,
-                         num.haplotypes = 66,
-                         output.Yrs = c(2008),
-                         abs.abundance = Abs.Abundance,
-                         rel.abundance = Rel.Abundance,
-                         rel.abundance.key = TRUE,
-                         count.data = NULL,
-                         count.data.key = FALSE,
-                         growth.rate.obs = c(0.074, 0.033, TRUE),
-                         growth.rate.Yrs = c(1995, 1996, 1997, 1998),
-                         catch.data = Catch.data,
-                         realized_prior = FALSE,
-                         control = sir_control()) {
+                          n_resamples = 1000,
+                          priors = make_prior_list(),
+                          catch_multipliers = make_multiplier_list(),
+                          target.Yr = 2008,
+                          num.haplotypes = 66,
+                          output.Yrs = c(2008),
+                          abs.abundance = Abs.Abundance,
+                          rel.abundance = Rel.Abundance,
+                          rel.abundance.key = TRUE,
+                          count.data = NULL,
+                          count.data.key = FALSE,
+                          growth.rate.obs = c(0.074, 0.033, TRUE),
+                          growth.rate.Yrs = c(1995, 1996, 1997, 1998),
+                          catch.data = Catch.data,
+                          realized_prior = FALSE,
+                          control = sir_control()) {
     begin.time <- Sys.time()
 
     ################################
@@ -172,6 +173,26 @@ StateSpaceSIR <- function(file_name = "NULL",
     ## Computing the minimum viable population, if num.haplotypes=0, assumes no MVP
     MVP <- 3 * num.haplotypes
 
+
+    ## Function to calculate Z if Pmsy is used
+    NmsyKz <- function(z,NmsyK) { 1-(z+1)*NmsyK^z }
+    if(priors$z$use & priors$Pmsy$use){
+        warning("Priors were set on both Pmsy and Z, using the prior on Z")
+    }
+
+    ## Sample from prior for `z` or Pmsy (usually constant) if constant
+    if (priors$z$use) {
+        if(priors$z$class == "constant"){
+            sample.z <- priors$z$rfn()
+            sample.Pmsy <- uniroot(NmsyKz,z=sample.z,lower=0,upper=1)$root
+        }
+    } else {
+        if(priors$Pmsy$class == "constant"){
+            sample.Pmsy <- priors$Pmsy$rfn()
+            sample.z <- uniroot(NmsyKz,NmsyK=sample.Pmsy,lower=1,upper=100)$root
+        }
+    }
+
     ## Start the loop
     i <- 0
     ## Keep track of number of draws
@@ -180,7 +201,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 
     #Creating output vectors
     #-------------------------------------
-    sir_names <- c("r_max", "K", "var_N", "z", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
+    sir_names <- c("r_max", "K", "var_N", "z", "Pmsy", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
                    "sample.N.obs", "add_CV", "Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
                    paste0("ROI_IA", unique(rel.abundance$Index)),
@@ -235,8 +256,18 @@ StateSpaceSIR <- function(file_name = "NULL",
         sample.var_N <- priors$var_N$rfn()
         sample.proc.error <- rlnorm(projection.Yrs-1, 0, sample.var_N) # Random process error
 
-        ## Sample from prior for `z` (usually constant)
-        sample.z <- priors$z$rfn()
+        ## Sample from prior for `z` or Pmsy (usually constant) if random
+        if (priors$z$use) {
+            if(priors$z$class == "function"){
+                sample.z <- priors$z$rfn()
+                sample.Pmsy <- uniroot(NmsyKz,z=sample.z,lower=0,upper=1)$root
+            }
+        } else {
+            if(priors$Pmsy$class == "function"){
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- uniroot(NmsyKz,NmsyK=sample.Pmsy,lower=1,upper=100)$root
+            }
+        }
 
         ## Sampling from q priors if q.prior is TRUE; priors on q for indices of
         ## abundance
@@ -453,6 +484,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                             sample.K,
                                             sample.var_N,
                                             sample.z,
+                                            sample.Pmsy,
                                             sample.catch_multipliers,
                                             sample.catch_parameter,
                                             sample.N.obs,
