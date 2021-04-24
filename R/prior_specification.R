@@ -84,6 +84,7 @@ rlunif <- function(n, min = 1, max = 2) {
 ##' @param N_obs Prior on a recent abundance estimate. Defaults to Uniform(500,
 ##'   20,000).
 ##' @param add_CV Defaults to unused. Additional variability.
+##' @param catch_sample Defaults to unused. Samples between the minimum and maximum catch values.
 ##' @param z Defaults to constant 2.39. Shape parameter for generalized logistic
 ##'   population dynamics function.
 ##' @param q_IA Defaults to unused. Prior on q for indices of abundance. If
@@ -97,6 +98,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
                             var_N = make_prior(0),
                             N_obs = make_prior(runif, 500, 40000),
                             add_CV = make_prior(use = FALSE),
+                            catch_sample = make_prior(runif, 0, 1),
                             z = make_prior(2.39),
                             q_IA = make_prior(use = FALSE),
                             q_count = make_prior(use = FALSE)) {
@@ -105,6 +107,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
          var_N = var_N,
          N_obs = N_obs,
          add_CV = add_CV,
+         catch_sample = catch_sample,
          z = z,
          q_IA = q_IA,
          q_count = q_count)

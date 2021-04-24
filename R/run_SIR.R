@@ -14,8 +14,6 @@
 #'   Default is the default of \code{make_prior_list}. See details.
 #' @param catch_multipliers List of catch multipliers, generated using \link{make_multiplier_list}
 #'   Can either be estimated or explicitly provided. Default is \code{make_multiplier_list}.
-#' @param catch_parameters List of samples, generated using \link{make_multiplier_list}. Default should be runif(0,1).
-#' Sample between high and low of each catch stream.
 #' @param target.Yr year of the target population estimate for the bisection
 #'   method. Default is 2008
 #' @param num.haplotypes number of haplotypes to compute minimum viable
@@ -52,6 +50,7 @@
 #'                 var_N = make_prior(0),
 #'                 N_obs = make_prior(runif, 500, 40000),
 #'                 add_CV = make_prior(use = FALSE),
+#'                 catch_sample = make_prior(runif, 0, 1),
 #'                 z = make_prior(2.39),
 #'                 q_IA = make_prior(use = FALSE),
 #'                 q_count = make_prior(use = FALSE)
@@ -67,7 +66,6 @@
 #'              n_resamples = 100,
 #'              priors = make_prior_list(),
 #'              catch_multipliers = make_multiplier_list(),
-#'              catch_parameters = make_multiplier_list(),
 #'              Klim = c(1, 500000),
 #'              target.Yr = 2005,
 #'              num.haplotypes = 0,
@@ -87,7 +85,6 @@ StateSpaceSIR <- function(file_name = "NULL",
                          n_resamples = 1000,
                          priors = make_prior_list(),
                          catch_multipliers = make_multiplier_list(),
-                         catch_parameters = make_multiplier_list(),
                          target.Yr = 2008,
                          num.haplotypes = 66,
                          output.Yrs = c(2008),
@@ -157,14 +154,6 @@ StateSpaceSIR <- function(file_name = "NULL",
              ")")
     }
 
-    if(length(catch_parameters) != n_catch_series){
-        stop("Number of catch parameters (",
-             length(catch_parameters),
-             ") does not equal number of catch periods (",
-             n_catch_series,
-             ")")
-    }
-
     ## Determining the number of Indices of Abundance available
     num.IA <- max(rel.abundance$Index)
 
@@ -191,8 +180,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 
     #Creating output vectors
     #-------------------------------------
-    sir_names <- c("r_max", "K", "var_N", "z", paste0("catch_multiplier_", 1:length(catch_multipliers)) ,
-                   paste0("catch_parameter_", 1:length(catch_parameters)),
+    sir_names <- c("r_max", "K", "var_N", "z", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
                    "sample.N.obs", "add_CV", "Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
                    paste0("ROI_IA", unique(rel.abundance$Index)),
@@ -219,12 +207,12 @@ StateSpaceSIR <- function(file_name = "NULL",
 
         # Sampling for catch_multiplier and high-low sample
         sample.catch_multipliers <- sapply(catch_multipliers, function(x) x$rfn())
-        sample.catch_parameters <- sapply(catch_parameters, function(x) x$rfn())
+        sample.catch_parameter <- priors$catch_sample$rfn()
 
         catches <- rep(0, length(Year))
 
         for(p in 1:length(catch.data)){
-            catches <- catches + (catch_min[[p]] + catch_dif[[p]] * sample.catch_parameters[p]) * sample.catch_multipliers[p]
+            catches <- catches + (catch_min[[p]] + catch_dif[[p]] * sample.catch_parameter) * sample.catch_multipliers[p]
         }
 
         #Sampling for r_max
@@ -466,7 +454,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                             sample.var_N,
                                             sample.z,
                                             sample.catch_multipliers,
-                                            sample.catch_parameters,
+                                            sample.catch_parameter,
                                             sample.N.obs,
                                             sample.add_CV,
                                             Pred_N$Min_Pop,
