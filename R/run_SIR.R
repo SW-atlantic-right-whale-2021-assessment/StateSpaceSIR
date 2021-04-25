@@ -140,7 +140,7 @@ StateSpaceSIR <- function(file_name = "NULL",
             catch.data[[i]][,grep("catch", colnames(catch.data[[i]]), ignore.case = T)])
         catch_min[[i]] <- apply(catch_original, 1, FUN=min)
         catch_max[[i]] <- apply(catch_original, 1, FUN=max)
-        catch_dif[[i]] <- catch_min[[i]] - catch_max[[i]]
+        catch_dif[[i]] <- catch_max[[i]] - catch_min[[i]]
     }
 
     ## Assigning the catch data
@@ -202,7 +202,7 @@ StateSpaceSIR <- function(file_name = "NULL",
     #Creating output vectors
     #-------------------------------------
     sir_names <- c("r_max", "K", "var_N", "z", "Pmsy", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
-                   "sample.N.obs", "add_CV", "Nmin", "YearMin",
+                   "sample.N.obs", "add_CV", "add_CV_IA","Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
                    paste0("ROI_IA", unique(rel.abundance$Index)),
                    paste0("q_IA", unique(rel.abundance$Index)),
@@ -211,6 +211,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                    "NLL.IAs", "NLL.Count", "NLL.N", "NLL.GR", "NLL", "Likelihood",
                    "Max_Dep",paste0("status", target.Yr), paste("status", output.Yrs, sep = ""), "draw", "save")
 
+    proc_error_save <- matrix(NA, nrow = n_resamples, ncol = projection.Yrs-1)
     resamples_output <- matrix(NA, nrow = n_resamples, ncol = length(sir_names))
     resamples_trajectories <- matrix(NA, nrow = n_resamples, ncol = projection.Yrs)
     catch_trajectories <- matrix(NA, nrow = n_resamples, ncol = projection.Yrs)
@@ -250,6 +251,12 @@ StateSpaceSIR <- function(file_name = "NULL",
             sample.add_CV <- priors$add_CV$rfn()
         } else {
             sample.add_CV <- 0
+        }
+
+        if (priors$add_CV_IA$use) {
+            sample.add_CV_IA <- priors$add_CV_IA$rfn()
+        } else {
+            sample.add_CV_IA <- 0
         }
 
         ## Sample from prior for variance of process error
@@ -349,7 +356,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 q.sample.IA <- CALC.ANALYTIC.Q(rel.abundance,
                                                Pred_N$Pred_N,
                                                start_yr,
-                                               sample.add_CV,
+                                               sample.add_CV_IA,
                                                num.IA)
             } else {
                 q.sample.IA <- q.sample.IA
@@ -388,7 +395,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                      Pred_N$Pred_N,
                                      start_yr,
                                      q.sample.IA,
-                                     sample.add_CV,
+                                     sample.add_CV_IA,
                                      TRUE)
         } else {
             lnlike.IAs <- 0
@@ -480,6 +487,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 Cumulative.Likelihood <- Cumulative.Likelihood-control$threshold
                 resamples_trajectories[i+1,] <- Pred_N$Pred_N
                 catch_trajectories[i+1,] <- catches
+                proc_error_save[i+1,] <- sample.proc.error
                 resamples_output[i+1,] <- c(sample.r_max,
                                             sample.K,
                                             sample.var_N,
@@ -489,6 +497,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                             sample.catch_parameter,
                                             sample.N.obs,
                                             sample.add_CV,
+                                            sample.add_CV_IA,
                                             Pred_N$Min_Pop,
                                             ifelse(length(Pred_N$Min_Yr) == 1, Pred_N$Min_Yr, "Multiple"),
                                             Pred_N$Violate_Min_Viable_Pop,
@@ -522,6 +531,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 
     # Save outputs
     resamples_output <- data.frame(resamples_output)
+    resamples_output[] <- lapply(resamples_output, function(x) as.numeric(as.character(x)))
     names(resamples_output) <- sir_names
     if(!is.null(file_name)){
         write.csv(resamples_output,
@@ -529,6 +539,7 @@ StateSpaceSIR <- function(file_name = "NULL",
     }
 
     resamples_trajectories <- data.frame(resamples_trajectories)
+    resamples_trajectories[] <- lapply(resamples_trajectories, function(x) as.numeric(as.character(x)))
     names(resamples_trajectories) <- paste0("N_", Year)
     if(!is.null(file_name)){
         write.csv(resamples_trajectories,
@@ -536,10 +547,19 @@ StateSpaceSIR <- function(file_name = "NULL",
     }
 
     catch_trajectories <- data.frame(catch_trajectories)
+    catch_trajectories[] <- lapply(catch_trajectories, function(x) as.numeric(as.character(x)))
     names(catch_trajectories) <- paste0("Catch_", Year)
     if(!is.null(file_name)){
         write.csv(catch_trajectories,
                   paste0(file_name, "_", "catch_trajectories.csv"))
+    }
+
+    proc_error_save <- data.frame(proc_error_save)
+    proc_error_save[] <- lapply(proc_error_save, function(x) as.numeric(as.character(x)))
+    names(proc_error_save) <- paste0("Proc_error_", Year[1:(projection.Yrs-1)])
+    if(!is.null(file_name)){
+        write.csv(proc_error_save,
+                  paste0(file_name, "_", "proc_error.csv"))
     }
 
     resamples.per.samples <- draw / n_resamples
