@@ -10,6 +10,7 @@ make_prior_list(
   var_N = make_prior(0),
   N_obs = make_prior(runif, 500, 40000),
   add_CV = make_prior(use = FALSE),
+  add_CV_IA = make_prior(use = FALSE),
   catch_sample = make_prior(runif, 0, 1),
   z = make_prior(2.39),
   Pmsy = make_prior(use = FALSE),
@@ -29,6 +30,8 @@ recent observation and sampled \code{r_max}.}
 20,000).}
 
 \item{add_CV}{Defaults to unused. Additional variability.}
+
+\item{add_CV_IA}{Defaults to unused. Additional variability on IA}
 
 \item{catch_sample}{Defaults to unused. Samples between the minimum and maximum catch values.}
 

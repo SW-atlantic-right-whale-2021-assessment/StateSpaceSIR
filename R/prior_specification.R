@@ -87,6 +87,7 @@ rlunif <- function(n, min = 1, max = 2) {
 ##' @param N_obs Prior on a recent abundance estimate. Defaults to Uniform(500,
 ##'   20,000).
 ##' @param add_CV Defaults to unused. Additional variability.
+##' @param add_CV_IA Defaults to unused. Additional variability on IA
 ##' @param catch_sample Defaults to unused. Samples between the minimum and maximum catch values.
 ##' @param z Defaults to constant 2.39. Shape parameter for generalized logistic
 ##'   population dynamics function. Both z and Pmsy are
