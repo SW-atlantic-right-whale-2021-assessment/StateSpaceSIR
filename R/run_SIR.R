@@ -283,8 +283,12 @@ StateSpaceSIR <- function(file_name = "NULL",
 
         ## Sampling from q priors if q.prior is TRUE; priors on q for indices of
         ## abundance
+        q.error = FALSE
         if (priors$q_IA$use) {
             q.sample.IA <- replicate(num.IA, priors$q_IA$rfn())
+            if(q.sample.IA <= 0){
+                q.error = TRUE
+            }
         } else {
             ## FIXME: -9999 is probably not a good sentinel value here; NA?
             q.sample.IA <- rep(-9999, length(unique(rel.abundance$Index)))
@@ -473,6 +477,13 @@ StateSpaceSIR <- function(file_name = "NULL",
             }
         }
 
+        ## If q <= 0
+        if (q.error) {
+            Likelihood <- 0
+            if (control$verbose > 0) {
+                message("Q less than 0 on draw", draw)
+            }
+        }
 
         Cumulative.Likelihood <- Cumulative.Likelihood + Likelihood
 
