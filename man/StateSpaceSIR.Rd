@@ -14,6 +14,7 @@ StateSpaceSIR(
   num.haplotypes = 66,
   output.Yrs = c(2008),
   abs.abundance = Abs.Abundance,
+  abs.abundance.key = TRUE,
   rel.abundance = Rel.Abundance,
   rel.abundance.key = TRUE,
   count.data = NULL,
@@ -50,6 +51,9 @@ outputs for 2005 and 2008 are needed, output.Yrs = c(2005, 2008)}
 
 \item{abs.abundance}{R object containing year, estimate of absolute
 abundance, and CV (see example)}
+
+\item{abs.abundance.key}{key to speficy if absolute abundance data are used
+in the likelihood. Default is TRUE}
 
 \item{rel.abundance}{R object containing years, estimates of relative
 abudnance and CVs (see example)}
@@ -112,6 +116,7 @@ StateSpaceSIR(file_name = "test.N2005",
              tolerance.for.bisection = 0.0001,
              output.Yrs = c(2005, 2006),
              abs.abundance = Abs.Abundance.2005,
+             abs.abundance.key = TRUE,
              rel.abundance = Rel.Abundance,
              rel.abundance.key = TRUE,
              count.data = Count.Data,

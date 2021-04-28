@@ -52,6 +52,7 @@
 #'                 var_N = make_prior(0),
 #'                 N_obs = make_prior(runif, 500, 40000),
 #'                 add_CV = make_prior(use = FALSE),
+#'                 add_CV_IA = make_prior(use = FALSE),
 #'                 catch_sample = make_prior(runif, 0, 1),
 #'                 z = make_prior(2.39),
 #'                 Pmsy = make_prior(use = FALSE),
@@ -826,7 +827,7 @@ CALC.ANALYTIC.Q <- function(rel.abundance, Pred_N, start_yr,
         qNumerator <- sum((log(IA$IA.obs / Pred_N[IA.yrs])) /
                               (IA$Sigma * IA$Sigma + add_CV * add_CV))
         ## Denominator of the analytic q estimator (Zerbini et al., 2011 - eq. (3))
-        qDenominator <- sum(1 / (IA$Sigma * IA$Sigma))
+        qDenominator <- sum(1 / (IA$Sigma * IA$Sigma + add_CV * add_CV))
         ## Estimate of q
         analytic.Q[i] <- exp(qNumerator / qDenominator)
     }
