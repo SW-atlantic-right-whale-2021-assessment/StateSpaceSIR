@@ -1,3 +1,19 @@
+#' OUTPUT FUNCTION
+#'
+#' Function that provides a plot of the estimated abundance trends and catch history from a SIR  model including: median, 95%
+#' credible interval, 50% credible interval, catch, and absolute indices of abundance.
+#'
+#' @param SIR A fitted SIR model
+#' @param Reference A fitted SIR model as the reference model
+#' @param file_name name of a file to identified the files exported by the
+#'   function. If NULL, does not save.
+#' @param posterior_pred Logical. If true, includes a posterior predictive distribution of the estimated IOA
+#' @param coolors Colors for abundance.
+#' @param coolors2 Colors for catch
+#'
+#' @return Returns and saves a figure with the abundance and catch trajectories.
+#'
+#' @export
 plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_pred = TRUE, coolors = "#941B0C",     coolors2 = "#104F55") {
 
 
@@ -16,7 +32,7 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
     # Extract N trajectories
     output_summary <- matrix(nrow = length(row_names), ncol = dim(x)[2])
     output_summary[1, ] <- sapply(x, mean)
-    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5, 0.025, 0.975, 0.25, 0.75))
+    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5,  0.25, 0.75, 0.25, 0.75))
     output_summary[7, ] <- sapply(x, min)
     output_summary[8, ] <- sapply(x, max)
     output_summary[9, ] <- sapply(x, length)
@@ -29,7 +45,7 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
         ref <- Reference$resamples_trajectories
         reference_summary <- matrix(nrow = length(row_names), ncol = dim(ref)[2])
         reference_summary[1, ] <- sapply(ref, mean)
-        reference_summary[2:6, ] <- sapply(ref, quantile, probs= c(0.5, 0.025, 0.975, 0.25, 0.75))
+        reference_summary[2:6, ] <- sapply(ref, quantile, probs= c(0.5,  0.25, 0.75, 0.25, 0.75))
         reference_summary[7, ] <- sapply(ref, min)
         reference_summary[8, ] <- sapply(ref, max)
         reference_summary[9, ] <- sapply(ref, length)
@@ -67,7 +83,7 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
     # Extract catch trajectories
     catch_summary <- matrix(nrow = length(row_names), ncol = dim(catch.data)[2])
     catch_summary[1, ] <- sapply(catch.data, mean)
-    catch_summary[2:6, ] <- sapply(catch.data, quantile, probs= c(0.5, 0.025, 0.975, 0.25, 0.75))
+    catch_summary[2:6, ] <- sapply(catch.data, quantile, probs= c(0.5,  0.25, 0.75, 0.25, 0.75))
     catch_summary[7, ] <- sapply(catch.data, min)
     catch_summary[8, ] <- sapply(catch.data, max)
     catch_summary[9, ] <- sapply(catch.data, length)
@@ -153,7 +169,7 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
             col = adjustcolor(coolors2, alpha = 0.2), border = NA) # 95% CI
         polygon( x = c(Years,rev(Years)),
                  y = c(output_summary[5, ], rev(output_summary[6, ])),
-                 col = adjustcolor(coolors2, alpha = 0.5), border = NA) # 90% CI
+                 col = adjustcolor(coolors2, alpha = 0.5), border = NA) # 50% CI
 
         # Median
         lines( x = Years, y = output_summary[2, ], lwd = 3, col = coolors2) # Median

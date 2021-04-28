@@ -52,7 +52,7 @@
 #'                 var_N = make_prior(0),
 #'                 N_obs = make_prior(runif, 500, 40000),
 #'                 add_CV = make_prior(use = FALSE),
-#'                 add_CV_IA = make_prior(use = FALSE),
+#'                 add_VAR_IA = make_prior(use = FALSE),
 #'                 catch_sample = make_prior(runif, 0, 1),
 #'                 z = make_prior(2.39),
 #'                 Pmsy = make_prior(use = FALSE),
@@ -207,7 +207,7 @@ StateSpaceSIR <- function(file_name = "NULL",
     #Creating output vectors
     #-------------------------------------
     sir_names <- c("r_max", "K", "var_N", "z", "Pmsy", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
-                   "sample.N.obs", "add_CV", "add_CV_IA","Nmin", "YearMin",
+                   "sample.N.obs", "add_CV", "add_VAR_IA","Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
                    paste0("ROI_IA", unique(rel.abundance$Index)),
                    paste0("q_IA", unique(rel.abundance$Index)),
@@ -258,10 +258,10 @@ StateSpaceSIR <- function(file_name = "NULL",
             sample.add_CV <- 0
         }
 
-        if (priors$add_CV_IA$use) {
-            sample.add_CV_IA <- priors$add_CV_IA$rfn()
+        if (priors$add_VAR_IA$use) {
+            sample.add_VAR_IA <- sqrt(priors$add_VAR_IA$rfn())
         } else {
-            sample.add_CV_IA <- 0
+            sample.add_VAR_IA <- 0
         }
 
         ## Sample from prior for variance of process error
@@ -361,7 +361,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 q.sample.IA <- CALC.ANALYTIC.Q(rel.abundance,
                                                Pred_N$Pred_N,
                                                start_yr,
-                                               sample.add_CV_IA,
+                                               sample.add_VAR_IA,
                                                num.IA)
             } else {
                 q.sample.IA <- q.sample.IA
@@ -400,7 +400,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                      Pred_N$Pred_N,
                                      start_yr,
                                      q.sample.IA,
-                                     sample.add_CV_IA,
+                                     sample.add_VAR_IA,
                                      TRUE)
         } else {
             lnlike.IAs <- 0
@@ -506,7 +506,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                             sample.catch_parameter,
                                             sample.N.obs,
                                             sample.add_CV,
-                                            sample.add_CV_IA,
+                                            sample.add_VAR_IA,
                                             Pred_N$Min_Pop,
                                             ifelse(length(Pred_N$Min_Yr) == 1, Pred_N$Min_Yr, "Multiple"),
                                             Pred_N$Violate_Min_Viable_Pop,
