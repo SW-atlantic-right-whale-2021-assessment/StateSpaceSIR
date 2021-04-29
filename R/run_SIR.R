@@ -341,7 +341,7 @@ StateSpaceSIR <- function(file_name = "NULL",
         #Computing the predicted ROI for the IAs and Count data, if applicable
         #----------------------------------------
         #For IAs
-        if (rel.abundance.key) {
+        if (rel.abundance.key & !q.error) {
             Pred.ROI.IA <- COMPUTING.ROI(data = rel.abundance,
                                          Pred_N = Pred_N$Pred_N,
                                          start_yr = start_yr)
@@ -399,7 +399,7 @@ StateSpaceSIR <- function(file_name = "NULL",
         #Compute the likelihoods
         #--------------------------------
         # (1) relative indices (if rel.abundance.key is TRUE)
-        if (rel.abundance.key) {
+        if (rel.abundance.key & !q.error) {
             lnlike.IAs <- LNLIKE.IAs(rel.abundance,
                                      Pred_N$Pred_N,
                                      start_yr,
