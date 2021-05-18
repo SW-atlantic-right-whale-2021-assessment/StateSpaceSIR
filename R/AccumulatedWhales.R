@@ -9,11 +9,10 @@
 #' @param year Year for calculating accumulated number of whales
 #' @param x Day of year to calculated accumulated number of whales: Assuming 320 because after 320 no new whales come in
 #'
-#' @return
 #' @export
 #'
-#' @example
-#' accum_fun(year = 2014, x = 320)
+#' @examples
+#' accum_fun(x = 320)
 accum_fun <- function(a = -77.41,
                       b =  0.03234,
                       c = 0.1605,
