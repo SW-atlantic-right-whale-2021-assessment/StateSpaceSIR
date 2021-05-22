@@ -55,8 +55,7 @@ abundance, and CV (see example)}
 \item{abs.abundance.key}{key to speficy if absolute abundance data are used
 in the likelihood. Default is TRUE}
 
-\item{rel.abundance}{R object containing years, estimates of relative
-abudnance and CVs (see example)}
+\item{rel.abundance}{data.frame of relative abundance indices. Columns are Index, Year, IA.obs, and Variance-Covariance Matrix of Logs (column names do not matter for var-covar)}
 
 \item{rel.abundance.key}{key to speficy if relative abundance data are used
 in the likelihood. Default is TRUE}
