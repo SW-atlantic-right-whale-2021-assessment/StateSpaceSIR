@@ -26,8 +26,8 @@
 ##' make_prior(rnorm, 0, 1, TRUE)
 ##' make_prior(runif, 0, 1, TRUE)
 ##' make_prior(rlunif, 0.01, 0.2, "Log-uniform(0.01, 0.2)")
-make_prior <- function(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE, label = NULL) {
-    if (is.function(rfn)) {
+make_prior <- function(rfn = NA, par1 = NULL, par2 = NULL, par3 = NULL, par4 = NULL, use = TRUE, label = NULL) {
+    if (is.function(rfn)){
         fn <- function() rfn(1, par1, par2)
         if (is.null(label)) {
             ## FIXME It would be nice to separate this out to its own function, but
@@ -36,12 +36,18 @@ make_prior <- function(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE, label = N
             dist_lab <- switch(deparse(substitute(rfn)),
                                "rnorm"  = "Normal",
                                "rlnorm" = "Log-normal",
+                               "rlnormTrunc" = "Truncated Log-normal",
                                "runif"  = "Uniform",
                                "rlunif" = "Log-uniform",
                                "rinvgamma" = "Inverse-gamma",
                                "User defined")
             label <- paste0(dist_lab, "(", par1, ", ", par2, ")")
             class <- "function"
+
+            if(dist_lab == "Truncated Log-normal"){
+                fn <- function() rfn(1, par1, par2, par3, par4)
+                label <- paste0(dist_lab, "(", par1, ", ", par2,", ", par3,", ", par4, ")")
+            }
         }
     } else if (is.numeric(rfn)) {
         fn <- function() rfn
@@ -53,7 +59,7 @@ make_prior <- function(rfn = NA, par1 = NULL, par2 = NULL, use = TRUE, label = N
         label <- "Not used"
         class <- "Not used"
     }
-    list(rfn = fn, pars = c(par1, par2), use = use, label = label, class = class)
+    list(rfn = fn, pars = c(par1, par2, par3, par4), use = use, label = label, class = class)
 }
 
 
