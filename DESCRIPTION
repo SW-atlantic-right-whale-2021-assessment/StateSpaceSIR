@@ -16,9 +16,9 @@ Encoding: UTF-8
 LazyData: true
 Depends:
     invgamma,
-    R (>= 2.10)
+    R (>= 4.00)
 Imports: 
-    Rcpp (>= 0.12.16),
+    Rcpp,
     latex2exp,
     mvtnorm,
     plyr

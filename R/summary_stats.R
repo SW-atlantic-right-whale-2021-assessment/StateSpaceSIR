@@ -2,6 +2,7 @@
 #'
 #' @param SIR Resample summary from StateSpaceSIR
 #' @param file_name Desired filename to where csv file will be saved. If NULL, will not save.
+#' @export
 summary_table <- function( SIR, file_name = NULL){
 
     # Vars of interest

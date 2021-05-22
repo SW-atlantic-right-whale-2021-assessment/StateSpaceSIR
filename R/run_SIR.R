@@ -170,18 +170,20 @@ StateSpaceSIR <- function(file_name = "NULL",
 
     ## Make var-covar into wide and tall with cov = 0 for different indices
     rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs))
-    rel.var.covar.wide <- rel.var.covar[which(rel.abundance$Index == 1),]
+    rel.var.covar.wide <- rel.var.covar.tall[which(rel.abundance$Index == 1),]
     rel.var.covar.wide <- rel.var.covar.wide[1:nrow(rel.var.covar.wide),1:nrow(rel.var.covar.wide)]
 
     rel.hess.tall <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
 
-    for(i in 2:length(unique(rel.abundance$Index))){
-        var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
-        var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
-        colnames(var.cov.tmp) <- NULL
-        rownames(var.cov.tmp) <- NULL
-        rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
-        rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
+    if(num.IA>1){
+        for(i in 2:length(unique(rel.abundance$Index))){
+            var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
+            var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
+            colnames(var.cov.tmp) <- NULL
+            rownames(var.cov.tmp) <- NULL
+            rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
+            rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
+        }
     }
     rel.var.covar.wide <- as.matrix(rel.var.covar.wide)
     rel.hess.wide <- solve(rel.var.covar.wide)
@@ -377,12 +379,12 @@ StateSpaceSIR <- function(file_name = "NULL",
         if (rel.abundance.key) {
             if (!priors$q_IA$use) {
                 q.sample.IA <- CALC.ANALYTIC.Q.MVLNORM(rel.abundance,
-                                               rel.var.covar.tall,
-                                               rel.hess.tall,
-                                               Pred_N$Pred_N,
-                                               start_yr,
-                                               sample.add_VAR_IA,
-                                               num.IA)
+                                                       rel.var.covar.tall,
+                                                       rel.hess.tall,
+                                                       Pred_N$Pred_N,
+                                                       start_yr,
+                                                       sample.add_VAR_IA,
+                                                       num.IA)
             } else {
                 q.sample.IA <- q.sample.IA
             }
@@ -671,6 +673,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 #'
 #' @return A numeric scalar representing predicted growth rate.
 #'
+#' @export
 #' @examples
 #' growth.rate.Yrs  <-  c(1995:1998)
 #' Pred_N <- c(1000, 1500, 1500, 2000)
@@ -796,6 +799,7 @@ TARGET.K <- function(r_max, K, N1, z,
 #'
 #' @return A numeric scalar of an estimate of  carrying capacity $K$.
 #'
+#' @export
 #' @examples
 #' LOGISTIC.BISECTION.K(K.low = 1, K.high = 100000, r_max = r_max, z = z,
 #'                      num_Yrs = bisection.Yrs, start_yr = start_yr,
@@ -876,7 +880,7 @@ CALC.ANALYTIC.Q <- function(rel.abundance, Pred_N, start_yr,
 #' @export
 #'
 CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred_N, start_yr,
-                            add_CV = 0, num.IA) {
+                                    add_CV = 0, num.IA) {
     ## Vector to store the q values
     analytic.Q <- rep(NA, num.IA)
 
@@ -992,6 +996,7 @@ PREDICT.IAs <- function(rel.abundance, Pred_N, start_yr,
 #'
 #' @return A list of two numeric scalars of estimates of log-likelihood.
 #'
+#' @export
 #' @examples
 #' Obs.N  <-  data.frame(Year = 2005, Sigma = 5, Obs.N = 1000)
 #' Pred_N  <-  1234
@@ -1018,7 +1023,7 @@ LNLIKE.Ns <- function(Obs.N, Pred_N, start_yr, add_cv, log = TRUE) {
 #' @param GR.SD.Obs Standard error of the observed growth rate
 #'
 #' @return A \code{list} containing \code{loglike.GR1} and \code{loglike.GR2}
-#'
+#' @export
 #' @examples
 #' LNLIKE.GR(0.1, 0.1, 0.1)
 LNLIKE.GR <- function(Obs.GR, Pred.GR, GR.SD.Obs, log = T) {
@@ -1041,6 +1046,7 @@ LNLIKE.GR <- function(Obs.GR, Pred.GR, GR.SD.Obs, log = T) {
 #' @param p_anthro is the proportion of the range of the species covered by monitoring
 #' @param log Return the log of the likelihood (TRUE/FALSE)
 #'
+#' @export
 #' @return the negative log-likelihood
 LNLIKE.BEACHED <- function(beached_data,
                            Pred_N,
@@ -1067,7 +1073,7 @@ LNLIKE.BEACHED <- function(beached_data,
 #' @param log whether to export as log-likelihood
 #'
 #' @return returns a scalar of the likelihood
-#'
+#' @export
 #' @examples
 #' Obs.N <- 2000
 #' Pred_N <- 2340
@@ -1088,7 +1094,7 @@ CALC.LNLIKE <- function(Obs.N, Pred_N, CV, log = FALSE) {
 #'   function. If NULL, will not save .csv file.
 #'
 #' @return Returns a data.frame with summary of SIR outputs
-#'
+#' @export
 #' @examples
 #' x  <-  rnorm(1000, 5, 7)
 #' y  <-  rnorm(1000, 6, 9)
