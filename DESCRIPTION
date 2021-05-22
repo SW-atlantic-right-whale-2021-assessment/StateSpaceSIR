@@ -15,12 +15,9 @@ BugReports: https://github.com/SW-atlantic-right-whale-2021-assessment/StateSpac
 Encoding: UTF-8
 LazyData: true
 Depends:
-    invgamma,
-    R (>= 2.10)
+    invgamma
 Imports: 
     Rcpp (>= 0.12.16),
-    latex2exp,
-    mvtnorm,
-    plyr
+    latex2exp
 LinkingTo: Rcpp
 RoxygenNote: 7.1.1

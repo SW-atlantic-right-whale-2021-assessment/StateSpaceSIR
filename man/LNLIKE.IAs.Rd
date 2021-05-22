@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_SIR.R
 \name{LNLIKE.IAs}
 \alias{LNLIKE.IAs}
-\title{Compute the log-likelihood of indices of abundance assuming univariate lognormal}
+\title{Compute the log-likelihood of indices of abundance}
 \usage{
 LNLIKE.IAs(rel.abundance, Pred_N, start_yr, q.values, add.CV, log = TRUE)
 }
@@ -24,5 +24,5 @@ likelihood.}
 List of likelihood based on Zerbini et al. (2011) eq. 5 or using `dnorm`
 }
 \description{
-Compute the log-likelihood of indices of abundance assuming univariate lognormal
+Compute the log-likelihood of indices of abundance
 }

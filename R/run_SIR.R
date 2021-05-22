@@ -25,7 +25,8 @@
 #'   abundance, and CV (see example)
 #' @param abs.abundance.key key to speficy if absolute abundance data are used
 #'   in the likelihood. Default is TRUE
-#' @param rel.abundance data.frame of relative abundance indices. Columns are Index, Year, IA.obs, and Variance-Covariance Matrix of Logs (column names do not matter for var-covar)
+#' @param rel.abundance R object containing years, estimates of relative
+#'   abudnance and CVs (see example)
 #' @param rel.abundance.key key to speficy if relative abundance data are used
 #'   in the likelihood. Default is TRUE
 #' @param count.data R object containing years, estimates of counts and effort.
@@ -165,26 +166,11 @@ StateSpaceSIR <- function(file_name = "NULL",
     ## Determining the number of Count Data sets available
     num.Count <- max(count.data$Index)
 
+    ## Computing the value of sigma as in Zerbini et al. 2011
+    rel.abundance$Sigma <- sqrt(log(1 + rel.abundance$CV.IA.obs^2))
+
     ## Computing the value of sigma for the count data as in Zerbini et al. (2011)
     count.data$Sigma <- sqrt(log(1 + count.data$CV.IA.obs^2))
-
-    ## Make var-covar into wide and tall with cov = 0 for different indices
-    rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs))
-    rel.var.covar.wide <- rel.var.covar[which(rel.abundance$Index == 1),]
-    rel.var.covar.wide <- rel.var.covar.wide[1:nrow(rel.var.covar.wide),1:nrow(rel.var.covar.wide)]
-
-    rel.hess.tall <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
-
-    for(i in 2:length(unique(rel.abundance$Index))){
-        var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
-        var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
-        colnames(var.cov.tmp) <- NULL
-        rownames(var.cov.tmp) <- NULL
-        rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
-        rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
-    }
-    rel.var.covar.wide <- as.matrix(rel.var.covar.wide)
-    rel.hess.wide <- solve(rel.var.covar.wide)
 
     ## Computing the value of sigma as in Zerbini et al. 2011
     abs.abundance$Sigma <- sqrt(log(1 + abs.abundance$CV.obs^2))
@@ -376,9 +362,7 @@ StateSpaceSIR <- function(file_name = "NULL",
         #---------------------------------------------------------
         if (rel.abundance.key) {
             if (!priors$q_IA$use) {
-                q.sample.IA <- CALC.ANALYTIC.Q.MVLNORM(rel.abundance,
-                                               rel.var.covar.tall,
-                                               rel.hess.tall,
+                q.sample.IA <- CALC.ANALYTIC.Q(rel.abundance,
                                                Pred_N$Pred_N,
                                                start_yr,
                                                sample.add_VAR_IA,
@@ -416,13 +400,12 @@ StateSpaceSIR <- function(file_name = "NULL",
         #--------------------------------
         # (1) relative indices (if rel.abundance.key is TRUE)
         if (rel.abundance.key & !q.error) {
-            lnlike.IAs <- LNLIKE.MVLNORM.IAs(rel.abundance,
-                                             rel.var.covar.wide,
-                                             Pred_N$Pred_N,
-                                             start_yr,
-                                             q.sample.IA,
-                                             sample.add_VAR_IA,
-                                             TRUE)
+            lnlike.IAs <- LNLIKE.IAs(rel.abundance,
+                                     Pred_N$Pred_N,
+                                     start_yr,
+                                     q.sample.IA,
+                                     sample.add_VAR_IA,
+                                     TRUE)
         } else {
             lnlike.IAs <- 0
         }
@@ -441,11 +424,11 @@ StateSpaceSIR <- function(file_name = "NULL",
 
         # (3) absolute abundance
         if (abs.abundance.key) {
-            lnlike.Ns <- LNLIKE.Ns(abs.abundance,
-                                   Pred_N$Pred_N,
-                                   start_yr,
-                                   sample.add_CV,
-                                   log=TRUE)
+        lnlike.Ns <- LNLIKE.Ns(abs.abundance,
+                               Pred_N$Pred_N,
+                               start_yr,
+                               sample.add_CV,
+                               log=TRUE)
         } else {
             lnlike.Ns <- 0
         }
@@ -849,6 +832,8 @@ CALC.ANALYTIC.Q <- function(rel.abundance, Pred_N, start_yr,
         IA <- rel.abundance[rel.abundance$Index == i,]
         ## Years for which IAs are available
         IA.yrs <- IA$Year-start_yr + 1
+        ## Computing the value of sigma as in Zerbini et al. 2011
+        IA$Sigma <- sqrt(log(1 + IA$CV.IA.obs^2))
         ## Numerator of the analytic q estimator (Zerbini et al., 2011 - eq. (3))
         qNumerator <- sum((log(IA$IA.obs / Pred_N[IA.yrs])) /
                               (IA$Sigma * IA$Sigma + add_CV * add_CV))
@@ -860,42 +845,7 @@ CALC.ANALYTIC.Q <- function(rel.abundance, Pred_N, start_yr,
     analytic.Q
 }
 
-
-#' Compute analytic estimates of q, the scaling parameter between indices and
-#' absolute population size
-#'
-#' @param rel.abundance Relative abundance index
-#' @param rel.var.covar Variance covariance (narrow)
-#' @param rel.hess Hessian matrix of relative abundance (narrow)
-#' @param add_CV Coefficient of variation
-#' @param Pred_N Predicted population
-#' @param start_yr Initial year
-#' @param num.IA Index of abundance
-#'
-#' @return A numeric estimator for $q$.
-#' @export
-#'
-CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred_N, start_yr,
-                            add_CV = 0, num.IA) {
-    ## Vector to store the q values
-    analytic.Q <- rep(NA, num.IA)
-
-    for (i in 1:num.IA) {
-        ## Subseting across each index of abundance
-        IA <- rel.abundance[rel.abundance$Index == i,]
-        HESS <- rel.hess[rel.abundance$Index == i,]
-        HESS <- as.matrix(HESS[,1:nrow(HESS)])
-
-        ## Years for which IAs are available
-        IA.yrs <- IA$Year-start_yr + 1
-
-        ## Estimate of q
-        analytic.Q[i] <-  exp(sum(HESS %*% log(IA$IA.obs / Pred_N[IA.yrs])) / sum(HESS))
-    }
-    analytic.Q
-}
-
-#' Compute the log-likelihood of indices of abundance assuming univariate lognormal
+#' Compute the log-likelihood of indices of abundance
 #'
 #' @param rel.abundance Relative abundance
 #' @param Pred_N Predicted population size
@@ -917,36 +867,6 @@ LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
             x = rel.abundance$IA.obs,
             meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
             sdlog = rel.abundance$Sigma + add.CV,
-            log))
-
-    loglike.IA1
-}
-
-
-#' Compute the log-likelihood of indices of abundance assuming multivariate lognormal
-#'
-#' @param rel.abundance Relative abundance indices
-#' @param rel.var.covar Variance covariance matrix
-#' @param Pred_N Predicted population size
-#' @param start_yr Initial year
-#' @param q.values Scaling parameter
-#' @param add.CV Coefficient of variation [UNUSED]
-#' @param log Boolean, return log likelihood (default TRUE) or
-#'   likelihood.
-#'
-#' @return List of likelihood based on multivariate lognormal distribution
-#' @export
-#'
-LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
-                               q.values, add.CV, log = TRUE) {
-
-    loglike.IA1 <- 0
-    IA.yrs <- rel.abundance$Year-start_yr + 1
-    loglike.IA1 <- -sum(
-        mvtnorm::dmvnorm(
-            x = log(rel.abundance$IA.obs),
-            mean = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
-            sigma = rel.var.covar,
             log))
 
     loglike.IA1
