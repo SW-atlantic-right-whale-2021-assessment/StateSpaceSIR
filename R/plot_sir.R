@@ -419,7 +419,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
 #'
 #' @return Returns and saves a figure with the posterior densities of parameters.
 #' @export
-plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, priors = NULL, inc_reference = TRUE, probs = c(0.025, 0.975) ){
+plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, priors = NULL, inc_reference = FALSE, probs = c(0.025, 0.975) ){
 
     # Make into list
     if(class(SIR) == "SIR"){
@@ -479,7 +479,7 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
             pdf( file = filename , width=10, height = 110 / 25.4, family = "serif")
         }
 
-        par(mfrow = c(2,(length(vars))/2 + 2))
+        par(mfrow = c(2,ceiling(length(vars)/2) + 2))
         par( mar=c(3, 0.05 , 0.5 , 0.55) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
 
         plot.new()
@@ -528,13 +528,13 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
                  ylab = NA, xlab = latex2exp::TeX(vars_latex[i]), yaxt = "n")
             mapply(lines, posterior_dens, lwd = posteriors_lwd, lty = posteriors_lty, col = posteriors_col[1:length(posterior_dens)])
 
-            if(i == (length(vars)/2))  {
+            if(i == ceiling(length(vars)/2))  {
                 plot.new()
                 plot.new()
             }
 
 
-            if(i %in% c(1, (length(vars))/2 + 1) ) {
+            if(i %in% c(1, ceiling(length(vars)/2) + 1) ) {
                 mtext(side = 2, "Density", line = 1, cex= 0.75)
             }
 
