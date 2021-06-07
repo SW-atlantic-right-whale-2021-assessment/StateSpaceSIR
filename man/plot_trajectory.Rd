@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_sir.R
 \name{plot_trajectory}
 \alias{plot_trajectory}
-\title{OUTPUT FUNCTION}
+\title{OUTPUT FU#' OUTPUT FUNCTION}
 \usage{
 plot_trajectory(
   SIR,

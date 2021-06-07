@@ -1,4 +1,4 @@
-#' OUTPUT FUNCTION
+#' OUTPUT FU#' OUTPUT FUNCTION
 #'
 #' Function that provides a plot of the estimated abundance trends and catch history from a SIR  model including: median, 95%
 #' credible interval, 50% credible interval, catch, and absolute indices of abundance.
@@ -233,8 +233,30 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
         stop("SIR model did not include an IOA")
     }
 
-    rel.abundance$Upper95 <- qlnorm(0.975, log(rel.abundance$IA.obs), rel.abundance$Sigma)
-    rel.abundance$Lower95 <- qlnorm(0.025, log(rel.abundance$IA.obs), rel.abundance$Sigma)
+    ## Determining the number of Indices of Abundance available
+    num.IA <- max(rel.abundance$Index)
+
+    ## Make var-covar into wide and tall with cov = 0 for different indices
+    rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs))
+    rel.var.covar.wide <- rel.var.covar.tall[which(rel.abundance$Index == 1),]
+    rel.var.covar.wide <- rel.var.covar.wide[1:nrow(rel.var.covar.wide),1:nrow(rel.var.covar.wide)]
+
+    rel.hess.tall <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
+
+    if(num.IA>1){
+        for(i in 2:length(unique(rel.abundance$Index))){
+            var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
+            var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
+            colnames(var.cov.tmp) <- NULL
+            rownames(var.cov.tmp) <- NULL
+            rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
+            rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
+        }
+    }
+    rel.var.covar.wide <- as.matrix(rel.var.covar.wide)
+
+    rel.abundance$Upper95 <- qlnorm(0.975, mean = log(rel.abundance$IA.obs), sd = sqrt(diag(rel.var.covar.wide)))
+    rel.abundance$Lower95 <- qlnorm(0.025, mean = log(rel.abundance$IA.obs), sd = sqrt(diag(rel.var.covar.wide)))
 
     # Predict IOA
     q_cols <- grep("q_IA", colnames(SIR$resamples_output)) # Columns of resample Q estimates
@@ -255,6 +277,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
 
         # Get IOA specifications
         rel.abundance.sub <- rel.abundance[which(rel.abundance$Index == i),]
+        rel.var.covar.wide.sub <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
         IA.yrs <- rel.abundance.sub$Year
         IA.yr.range[[i]] <- c((min(IA.yrs) - 1):(max(IA.yrs) + 1)) # Range +- 1 of IOA years
 
@@ -284,7 +307,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
                 IA_posterior_pred[[i]][,j] <- rlnorm(
                     n = nrow(IA_posterior_pred[[i]]),
                     meanlog = log( q_est[,rel.abundance.sub$Index[j]] * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ),
-                    sdlog = rel.abundance.sub$Sigma[j] + SIR$resamples_output$add_CV[1])
+                    sdlog = sqrt(diag(rel.var.covar.wide.sub))[j])
             }
 
             IA_posterior_pred[[i]] <- data.frame(IA_posterior_pred[[i]])
