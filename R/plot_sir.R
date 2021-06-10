@@ -461,8 +461,8 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
     # Vars of interest
     years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
                             sapply(SIR, function(x) x$inputs$output.Years))))
-    vars <- c("r_max", "K", "z", "Pmsy", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years))
-    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$P_{MSY}$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
+    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years))
+    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
 
     # Plot
     for(j in 1:(1 + as.numeric(!is.null(file_name)) * 2)){
@@ -588,8 +588,8 @@ compare_posteriors <- function(SIR, model_names = NULL, file_name = NULL, bayes_
         years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
                                 sapply(SIR, function(x) x$inputs$output.Years))))
     }
-    vars <- c("r_max", "K", "z", "Pmsy", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years))
-    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$P_{MSY}$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
+    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years))
+    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
 
     for(k in 1:length(vars)){ # Loop through vars
         for(j in 1:(1 + as.numeric(!is.null(file_name)) * 2)){
@@ -660,8 +660,8 @@ compare_posteriors <- function(SIR, model_names = NULL, file_name = NULL, bayes_
     ###########################
 
     # Vars of interest
-    vars <- c("r_max", "K", "z", "Pmsy", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years))
-    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$P_{MSY}$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
+    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years))
+    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
 
     for(j in 1:(1 + as.numeric(!is.null(file_name)) * 2)){
 
