@@ -258,10 +258,21 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
     rel.abundance$Upper95 <- qlnorm(0.975, mean = log(rel.abundance$IA.obs), sd = sqrt(diag(rel.var.covar.wide)))
     rel.abundance$Lower95 <- qlnorm(0.025, mean = log(rel.abundance$IA.obs), sd = sqrt(diag(rel.var.covar.wide)))
 
+
+    ## Get relative-abundance year relative to each index (1:max_yr_index)
+    group.center <- function(var,grp) {
+        return(var-tapply(var,grp,min,na.rm=T)[grp])
+    }
+    rel.abundance$IndYear <- group.center(rel.abundance$Year, rel.abundance$Index)
+
     # Predict IOA
-    q_cols <- grep("q_IA", colnames(SIR$resamples_output)) # Columns of resample Q estimates
-    q_est <- SIR$resamples_output[, q_cols]
-    q_est <- as.matrix(q_est, ncol = length(q_cols))
+    q1_cols <- grep("q_IA1", colnames(SIR$resamples_output)) # Columns of resample Q estimates
+    q1_est <- SIR$resamples_output[, q1_cols]
+    q1_est <- as.matrix(q1_est, ncol = length(q1_cols))
+
+    q2_cols <- grep("q_IA2", colnames(SIR$resamples_output)) # Columns of resample Q estimates
+    q2_est <- SIR$resamples_output[, q2_cols]
+    q2_est <- as.matrix(q2_est, ncol = length(q2_cols))
 
 
     # Setup objects
@@ -273,17 +284,19 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
     IA_posterior_pred_sum <- list()
 
     # Predict and calculate summary
-    for(i in 1:length(q_cols)){
+    for(i in 1:length(q1_cols)){
 
         # Get IOA specifications
         rel.abundance.sub <- rel.abundance[which(rel.abundance$Index == i),]
         rel.var.covar.wide.sub <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
         IA.yrs <- rel.abundance.sub$Year
-        IA.yr.range[[i]] <- c((min(IA.yrs) - 1):(max(IA.yrs) + 1)) # Range +- 1 of IOA years
+        IA.yr.range[[i]] <- c((min(IA.yrs)):(max(IA.yrs))) # Range +- 1 of IOA years
 
         # Predict
         N_hat <- SIR$resamples_trajectories[, paste0("N_", IA.yr.range[[i]])] # Estimates of N within IOA years
-        IA_pread[[i]] <- N_hat * q_est[,i]
+        q2_tmp <- matrix(q2_est[,i], ncol = 1)
+        IndYear <- matrix(IA.yr.range[[i]] - min(IA.yr.range[[i]]), nrow = 1)
+        IA_pread[[i]] <- N_hat * q1_est[,i] * exp(q2_tmp %*% IndYear)
 
         # Summarize
         IA_summary[[i]] <-  matrix(nrow = length(row_names), ncol = dim(IA_pread[[i]])[2])
@@ -306,7 +319,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
             for(j in 1:length(IA.yrs)){
                 IA_posterior_pred[[i]][,j] <- rlnorm(
                     n = nrow(IA_posterior_pred[[i]]),
-                    meanlog = log( q_est[,rel.abundance.sub$Index[j]] * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ),
+                    meanlog = log( q1_est[,rel.abundance.sub$Index[j]] * exp(q2_est[,rel.abundance.sub$Index[j]] * rel.abundance.sub$IndYear[j]) * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ),
                     sdlog = sqrt(diag(rel.var.covar.wide.sub))[j])
             }
 
@@ -679,7 +692,7 @@ compare_posteriors <- function(SIR, model_names = NULL, file_name = NULL, bayes_
 
         # Set up multiplot
         layout(matrix(c(1:(length(vars) + 2)), (length(vars)/2 + 1), 2, byrow = FALSE), heights = c(rep(1, length(vars)/2), 0.35))
-        par( mar=c(0.15, 3.5 , 0.5 , 0.5) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
+        par( mar=c(0.15, 3.6 , 0.5 , 0.5) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
 
         # Loop through vars
         for(k in 1:length(vars)){ # Loop through vars

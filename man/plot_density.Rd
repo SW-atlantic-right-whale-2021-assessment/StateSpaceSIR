@@ -10,7 +10,7 @@ plot_density(
   lower = NULL,
   upper = NULL,
   priors = NULL,
-  inc_reference = TRUE,
+  inc_reference = FALSE,
   probs = c(0.025, 0.975)
 )
 }

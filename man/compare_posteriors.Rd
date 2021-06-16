@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_sir.R
 \name{compare_posteriors}
 \alias{compare_posteriors}
-\title{Function to compare posters}
+\title{Function to compare posteriors}
 \usage{
 compare_posteriors(
   SIR,
@@ -31,5 +31,5 @@ function. If NULL, does not save.}
 \item{years}{Optional vector of years to compare.}
 }
 \description{
-Function to compare posters
+Function to compare posteriors
 }

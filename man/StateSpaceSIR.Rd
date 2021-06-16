@@ -94,7 +94,8 @@ make_prior_list(r_max = make_prior(runif, 0, 0.118),
                 catch_sample = make_prior(runif, 0, 1),
                 z = make_prior(2.39),
                 Pmsy = make_prior(use = FALSE),
-                q_IA = make_prior(use = FALSE),
+                q_IA1 = make_prior(use = FALSE),
+                q_IA2 = make_prior(0),
                 q_count = make_prior(use = FALSE)
 
  make_multiplier_list(c_mult_1 = make_prior(1))}

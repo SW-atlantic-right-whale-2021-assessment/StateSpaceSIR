@@ -14,7 +14,8 @@ make_prior_list(
   catch_sample = make_prior(runif, 0, 1),
   z = make_prior(2.39),
   Pmsy = make_prior(use = FALSE),
-  q_IA = make_prior(use = FALSE),
+  q_IA1 = make_prior(use = FALSE),
+  q_IA2 = make_prior(0),
   q_count = make_prior(use = FALSE)
 )
 }
@@ -44,8 +45,8 @@ confounded and only one can be used. If \code{use = FALSE},
 Both z and Pmsy are confounded and only one can be used.
  If \code{use = FALSE}, z is used.}
 
-\item{q_IA}{Defaults to unused. Prior on q for indices of abundance. If
-\code{use = FALSE}, an analytic solution for q is used.}
+\item{q_IA1}{Defaults to unused. Prior on annual slope for q for indices of abundance. If
+\code{use = FALSE} for q_IA1, an analytic solution for q is used.}
 
 \item{q_count}{Defaults to unused. Prior for q on counts.}
 }

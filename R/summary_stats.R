@@ -4,12 +4,14 @@
 #' @param file_name Desired filename to where csv file will be saved. If NULL, will not save.
 summary_table <- function( SIR, file_name = NULL){
 
+    num.IA <- max(SIR$inputs$rel.abundance$Index)
+
     # Vars of interest
     years <- sort(c( SIR$inputs$target.Yr, SIR$inputs$output.Years))
-    vars <- c("r_max", "K", "z", "Pmsy", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years))
-    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$Pmsy$","$sigma^2$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
+    vars <- c("r_max", "K", "z", "Pmsy", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA))
+    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$Pmsy$","$sigma^2$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_flt", 1:num.IA, "$"), paste0("$Beta_{q_{flt", 1:num.IA,"}}$"))
     pop_vars <- c("K", "Nmin", paste0("N", years))
-    depletion_vars <- c("Max_Dep", paste0("status", years))
+    depletion_vars <- c("Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA))
 
     results <- data.frame(matrix(NA, nrow = length(vars), ncol = 8))
     colnames(results) <- c("Parameter","Mean", "Median", "2.5% CI", "25% CI", "75% CI", "97.5% CI", "Unique")
@@ -23,7 +25,8 @@ summary_table <- function( SIR, file_name = NULL){
     results[,8] <- sapply(x, function(x) length(unique(x)))
 
     # Format things
-    results[c(1,3:5),2:7] <- round(results[c(1,3:5),2:7], 3)
+    results[c(1,3:4),2:7] <- round(results[c(1,3:4),2:7], 3)
+    results[5,2:7] <- round(results[5,2:7], 4)
     results[which(vars %in% depletion_vars),2:7] <- round(results[which(vars %in% depletion_vars),2:7], 3)
     results[which(vars %in% pop_vars),2:7] <- format(round(results[which(vars %in% pop_vars),2:7], 0),big.mark=",",scientific=FALSE)
     results[,8] <- format(round(results[,8], 0),big.mark=",",scientific=FALSE)
