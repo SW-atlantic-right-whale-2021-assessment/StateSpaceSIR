@@ -472,10 +472,11 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
     }
 
     # Vars of interest
+    num.IA <- sort(unique(c( sapply(SIR, function(x) x$inputs$rel.abundance$Index))))
     years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
                             sapply(SIR, function(x) x$inputs$output.Years))))
-    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years))
-    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years))
+    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA))
+    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", num.IA, "}$"), paste0("$\beta_{q_{flt", num.IA,"}}$"))
 
     # Plot
     for(j in 1:(1 + as.numeric(!is.null(file_name)) * 2)){
