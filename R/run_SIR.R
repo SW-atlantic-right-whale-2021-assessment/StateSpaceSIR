@@ -912,6 +912,12 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
         HESS <- rel.hess[rel.abundance$Index == i,]
         HESS <- as.matrix(HESS[,1:nrow(HESS)])
 
+        if(add_CV > 0){
+            var.cov <- solve(HESS)
+            diag(var.cov) <- diag(var.cov) + add_CV^2 # Add additional var
+            HESS <- solve(var.cov) # Invert
+        }
+
         ## Years for which IAs are available
         IA.yrs <- IA$Year-start_yr + 1
 
@@ -927,7 +933,7 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
 #' @param Pred_N Predicted population size
 #' @param start_yr Initial year
 #' @param q.values Scaling parameter
-#' @param add.CV Coefficient of variation
+#' @param add_CV Coefficient of variation
 #' @param log Boolean, return log likelihood (default TRUE) or
 #'   likelihood.
 #'
@@ -935,14 +941,14 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
 #' @export
 #'
 LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
-                       q.values, add.CV, log = TRUE) {
+                       q.values, add_CV, log = TRUE) {
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1
     loglike.IA1 <- -sum(
         dlnorm( # NOTE: can be changed to dlnorm_zerb
             x = rel.abundance$IA.obs,
             meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
-            sdlog = rel.abundance$Sigma + add.CV,
+            sdlog = rel.abundance$Sigma + add_CV,
             log))
 
     loglike.IA1
@@ -956,7 +962,7 @@ LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
 #' @param Pred_N Predicted population size
 #' @param start_yr Initial year
 #' @param q_vec Scaling parameter
-#' @param add.CV Coefficient of variation [UNUSED]
+#' @param add_CV Coefficient of variation [UNUSED]
 #' @param log Boolean, return log likelihood (default TRUE) or
 #'   likelihood.
 #'
@@ -964,10 +970,11 @@ LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
 #' @export
 #'
 LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
-                               q_vec, add.CV, log = TRUE) {
+                               q_vec, add_CV, log = TRUE) {
 
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1 # Starts at start year
+    diag(rel.var.covar) <- diag(rel.var.covar) + add_CV^2
 
     loglike.IA1 <- -sum(
         mvtnorm::dmvnorm(
@@ -988,14 +995,14 @@ LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
 #' @export
 #'
 PREDICT.IAs <- function(rel.abundance, Pred_N, start_yr,
-                        q.values, add.CV, log = TRUE) {
+                        q.values, add_CV, log = TRUE) {
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1
     loglike.IA1 <- -sum(
         rlnorm( # NOTE: can be changed to dlnorm_zerb
             x = rel.abundance$IA.obs,
             meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
-            sdlog = rel.abundance$Sigma + add.CV,
+            sdlog = rel.abundance$Sigma + add_CV,
             log))
 
     loglike.IA1

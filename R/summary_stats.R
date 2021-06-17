@@ -8,10 +8,12 @@ summary_table <- function( SIR, file_name = NULL){
 
     # Vars of interest
     years <- sort(c( SIR$inputs$target.Yr, SIR$inputs$output.Years))
-    vars <- c("r_max", "K", "z", "Pmsy", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA))
-    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$Pmsy$","$sigma^2$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", 1:num.IA, "}$"), paste0("$\beta_{q_{flt", 1:num.IA,"}}$"))
+    vars <- c("r_max", "K", "z", "Pmsy", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
+    vars_latex <- c("$r_{max}$", "$K$", "$z$", "$Pmsy$","$sigma^2$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", 1:num.IA, "}$"), paste0("$\beta_{q_{flt", 1:num.IA,"}}$"), "$sigma_q$")
+
+
     pop_vars <- c("K", "Nmin", paste0("N", years))
-    depletion_vars <- c("Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA))
+    depletion_vars <- c("Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
 
     results <- data.frame(matrix(NA, nrow = length(vars), ncol = 8))
     colnames(results) <- c("Parameter","Mean", "Median", "2.5% CI", "25% CI", "75% CI", "97.5% CI", "Unique")
