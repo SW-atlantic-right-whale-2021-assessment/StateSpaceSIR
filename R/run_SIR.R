@@ -312,17 +312,17 @@ StateSpaceSIR <- function(file_name = "NULL",
         if (priors$q_IA1$use) {
             q.sample.IA1 <- replicate(num.IA, priors$q_IA1$rfn())
             q.sample.IA2 <- replicate(num.IA, priors$q_IA2$rfn())
-            q_vec <- q.sample.IA1[rel.abundance$Index] * exp( rel.abundance$IndYear * q.sample.IA2[rel.abundance$Index]) # q_y = exp(a + b * yr)
+            # q_vec <- q.sample.IA1[rel.abundance$Index] * exp( rel.abundance$IndYear * q.sample.IA2[rel.abundance$Index]) # q_y = exp(a + b * yr)
 
 
-            if(sum(q_vec <= 0) > 0){
-                q.error = TRUE
-            }
+            # if(sum(q_vec <= 0) > 0){
+            #     q.error = TRUE
+            # }
         } else {
             ## FIXME: -9999 is probably not a good sentinel value here; NA?
             q.sample.IA1 <- rep(-9999, num.IA)
             q.sample.IA2 <- rep(-9999, num.IA)
-            q_vec <- -9999 * exp(rel.abundance$IndYear * 0)
+            # q_vec <- -9999 * exp(rel.abundance$IndYear * 0)
         }
 
         ##priors on q for count data
@@ -401,13 +401,13 @@ StateSpaceSIR <- function(file_name = "NULL",
                                                        sample.add_VAR_IA,
                                                        num.IA)
                 q.sample.IA2 <- 0
-                q_vec <- q.sample.IA1[rel.abundance$Index]
+                # q_vec <- q.sample.IA1[rel.abundance$Index]
 
 
             } else {
                 q.sample.IA1 <- q.sample.IA1
                 q.sample.IA2 <- q.sample.IA2
-                q_vec = q_vec
+                # q_vec = q_vec
             }
         }
 
@@ -443,7 +443,8 @@ StateSpaceSIR <- function(file_name = "NULL",
                                              rel.var.covar.wide,
                                              Pred_N$Pred_N,
                                              start_yr,
-                                             q_vec,
+                                             q.sample.IA1,
+                                             q.sample.IA2,
                                              sample.add_VAR_IA,
                                              TRUE)
         } else {
@@ -912,12 +913,6 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
         HESS <- rel.hess[rel.abundance$Index == i,]
         HESS <- as.matrix(HESS[,1:nrow(HESS)])
 
-        if(add_CV > 0){
-            var.cov <- solve(HESS)
-            diag(var.cov) <- diag(var.cov) + add_CV^2 # Add additional var
-            HESS <- solve(var.cov) # Invert
-        }
-
         ## Years for which IAs are available
         IA.yrs <- IA$Year-start_yr + 1
 
@@ -933,7 +928,7 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
 #' @param Pred_N Predicted population size
 #' @param start_yr Initial year
 #' @param q.values Scaling parameter
-#' @param add_CV Coefficient of variation
+#' @param add.CV Coefficient of variation
 #' @param log Boolean, return log likelihood (default TRUE) or
 #'   likelihood.
 #'
@@ -941,14 +936,14 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
 #' @export
 #'
 LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
-                       q.values, add_CV, log = TRUE) {
+                       q.values, add.CV, log = TRUE) {
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1
     loglike.IA1 <- -sum(
         dlnorm( # NOTE: can be changed to dlnorm_zerb
             x = rel.abundance$IA.obs,
             meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
-            sdlog = rel.abundance$Sigma + add_CV,
+            sdlog = rel.abundance$Sigma + add.CV,
             log))
 
     loglike.IA1
@@ -961,8 +956,9 @@ LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
 #' @param rel.var.covar Variance covariance matrix
 #' @param Pred_N Predicted population size
 #' @param start_yr Initial year
-#' @param q_vec Scaling parameter
-#' @param add_CV Coefficient of variation [UNUSED]
+#' @param q.sample.IA1 Scaling parameter
+#' @param q.sample.IA2 Scaling parameter 2
+#' @param add.CV Coefficient of variation [UNUSED]
 #' @param log Boolean, return log likelihood (default TRUE) or
 #'   likelihood.
 #'
@@ -970,16 +966,15 @@ LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
 #' @export
 #'
 LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
-                               q_vec, add_CV, log = TRUE) {
+                               q.sample.IA1, q.sample.IA2, add.CV, log = TRUE) {
 
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1 # Starts at start year
-    diag(rel.var.covar) <- diag(rel.var.covar) + add_CV^2
 
     loglike.IA1 <- -sum(
         mvtnorm::dmvnorm(
             x = log(rel.abundance$IA.obs),
-            mean = log( q_vec * Pred_N[IA.yrs] ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
+            mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA1[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
             sigma = rel.var.covar,
             log))
 
@@ -995,14 +990,14 @@ LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
 #' @export
 #'
 PREDICT.IAs <- function(rel.abundance, Pred_N, start_yr,
-                        q.values, add_CV, log = TRUE) {
+                        q.values, add.CV, log = TRUE) {
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1
     loglike.IA1 <- -sum(
         rlnorm( # NOTE: can be changed to dlnorm_zerb
             x = rel.abundance$IA.obs,
             meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
-            sdlog = rel.abundance$Sigma + add_CV,
+            sdlog = rel.abundance$Sigma + add.CV,
             log))
 
     loglike.IA1

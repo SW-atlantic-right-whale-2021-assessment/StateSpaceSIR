@@ -9,7 +9,8 @@ LNLIKE.MVLNORM.IAs(
   rel.var.covar,
   Pred_N,
   start_yr,
-  q_vec,
+  q.sample.IA1,
+  q.sample.IA2,
   add.CV,
   log = TRUE
 )
@@ -23,7 +24,9 @@ LNLIKE.MVLNORM.IAs(
 
 \item{start_yr}{Initial year}
 
-\item{q_vec}{Scaling parameter}
+\item{q.sample.IA1}{Scaling parameter}
+
+\item{q.sample.IA2}{Scaling parameter 2}
 
 \item{add.CV}{Coefficient of variation [UNUSED]}
 
