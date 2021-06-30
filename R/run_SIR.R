@@ -200,7 +200,7 @@ StateSpaceSIR <- function(file_name = "NULL",
             var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
             colnames(var.cov.tmp) <- NULL
             rownames(var.cov.tmp) <- NULL
-            rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
+            rel.var.covar.wide <- diag(as.matrix(rel.var.covar.wide), var.cov.tmp)
             rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
         }
     }
