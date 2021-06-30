@@ -90,6 +90,8 @@ StateSpaceSIR <- function(file_name = "NULL",
                           n_resamples = 1000,
                           priors = make_prior_list(),
                           catch_multipliers = make_multiplier_list(),
+                          q1_priors = make_multiplier_list(),
+                          q2_priors = make_multiplier_list(),
                           target.Yr = 2008,
                           num.haplotypes = 66,
                           output.Yrs = c(2008),
@@ -163,6 +165,22 @@ StateSpaceSIR <- function(file_name = "NULL",
     ## Determining the number of Indices of Abundance available
     num.IA <- max(rel.abundance$Index)
 
+    if(length(q1_priors) != num.IA){
+        stop("Number of q1 priors (",
+             length(q1_priors),
+             ") does not equal number of surveys (",
+             num.IA,
+             ")")
+    }
+
+    if(length(q2_priors) != num.IA){
+        stop("Number of q2 priors (",
+             length(q2_priors),
+             ") does not equal number of surveys (",
+             num.IA,
+             ")")
+    }
+
     ## Determining the number of Count Data sets available
     num.Count <- max(count.data$Index)
 
@@ -233,9 +251,9 @@ StateSpaceSIR <- function(file_name = "NULL",
     sir_names <- c("r_max", "K", "var_N", "z", "Pmsy", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
                    "sample.N.obs", "add_CV", "add_VAR_IA","Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
-                   paste0("ROI_IA", unique(rel.abundance$Index)),
-                   paste0("q_IA1", unique(rel.abundance$Index)),
-                   paste0("q_IA2", unique(rel.abundance$Index)),
+                   paste0("ROI_IA", num.IA),
+                   paste0("q_IA1", num.IA),
+                   paste0("q_IA2", num.IA),
                    paste0("ROI_Count", unique(count.data$Index)),
                    paste0("q_Count", unique(count.data$Index)),
                    "NLL.IAs", "NLL.Count", "NLL.N", "NLL.GR", "NLL", "Likelihood",
@@ -309,9 +327,9 @@ StateSpaceSIR <- function(file_name = "NULL",
         ## Sampling from q priors if q.prior is TRUE; priors on q for indices of
         ## abundance
         q.error = FALSE
-        if (priors$q_IA1$use) {
-            q.sample.IA1 <- replicate(num.IA, priors$q_IA1$rfn())
-            q.sample.IA2 <- replicate(num.IA, priors$q_IA2$rfn())
+        if (q1_priors[[1]]$use) {
+            q.sample.IA1 <- sapply(q1_priors, function(x) x$rfn())
+            q.sample.IA2 <- sapply(q2_priors, function(x) x$rfn())
             # q_vec <- q.sample.IA1[rel.abundance$Index] * exp( rel.abundance$IndYear * q.sample.IA2[rel.abundance$Index]) # q_y = exp(a + b * yr)
 
 
@@ -392,7 +410,7 @@ StateSpaceSIR <- function(file_name = "NULL",
         #Calculate Analytical Qs if rel.abundance.key is TRUE
         #---------------------------------------------------------
         if (rel.abundance.key) {
-            if (!priors$q_IA1$use) {
+            if (!q1_priors[[1]]$use) {
                 q.sample.IA1 <- CALC.ANALYTIC.Q.MVLNORM(rel.abundance,
                                                        rel.var.covar.tall,
                                                        rel.hess.tall,
@@ -400,7 +418,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                                        start_yr,
                                                        sample.add_VAR_IA,
                                                        num.IA)
-                q.sample.IA2 <- 0
+                q.sample.IA2 <- rep(0, num.IA)
                 # q_vec <- q.sample.IA1[rel.abundance$Index]
 
 
@@ -974,7 +992,7 @@ LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
     loglike.IA1 <- -sum(
         mvtnorm::dmvnorm(
             x = log(rel.abundance$IA.obs),
-            mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA1[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
+            mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA2[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
             sigma = rel.var.covar,
             log))
 

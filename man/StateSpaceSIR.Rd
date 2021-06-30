@@ -10,6 +10,8 @@ StateSpaceSIR(
   n_resamples = 1000,
   priors = make_prior_list(),
   catch_multipliers = make_multiplier_list(),
+  q1_priors = make_multiplier_list(),
+  q2_priors = make_multiplier_list(),
   target.Yr = 2008,
   num.haplotypes = 66,
   output.Yrs = c(2008),
