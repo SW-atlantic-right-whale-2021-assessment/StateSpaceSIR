@@ -249,7 +249,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
             var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
             colnames(var.cov.tmp) <- NULL
             rownames(var.cov.tmp) <- NULL
-            rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
+            rel.var.covar.wide <- Matrix::bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
             rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
         }
     }

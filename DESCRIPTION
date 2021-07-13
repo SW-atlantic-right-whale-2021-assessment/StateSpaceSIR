@@ -20,6 +20,7 @@ Imports:
     Rcpp (>= 0.12.16),
     latex2exp,
     EnvStats,
-    mvtnorm
+    mvtnorm,
+    Matrix
 LinkingTo: Rcpp
 RoxygenNote: 7.1.1

@@ -182,7 +182,7 @@ StateSpaceSIR <- function(file_name = "NULL",
             var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
             colnames(var.cov.tmp) <- NULL
             rownames(var.cov.tmp) <- NULL
-            rel.var.covar.wide <- bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
+            rel.var.covar.wide <- Matrix::bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
             rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
         }
     }
@@ -974,7 +974,7 @@ LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
     loglike.IA1 <- -sum(
         mvtnorm::dmvnorm(
             x = log(rel.abundance$IA.obs),
-            mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA1[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
+            mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA2[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
             sigma = rel.var.covar,
             log))
 
