@@ -312,8 +312,6 @@ StateSpaceSIR <- function(file_name = "NULL",
         if (priors$q_IA1$use) {
             q.sample.IA1 <- replicate(num.IA, priors$q_IA1$rfn())
             q.sample.IA2 <- replicate(num.IA, priors$q_IA2$rfn())
-            # q_vec <- q.sample.IA1[rel.abundance$Index] * exp( rel.abundance$IndYear * q.sample.IA2[rel.abundance$Index]) # q_y = exp(a + b * yr)
-
 
             # if(sum(q_vec <= 0) > 0){
             #     q.error = TRUE
@@ -393,17 +391,15 @@ StateSpaceSIR <- function(file_name = "NULL",
         #---------------------------------------------------------
         if (rel.abundance.key) {
             if (!priors$q_IA1$use) {
+                q.sample.IA2 <- replicate(num.IA, priors$q_IA2$rfn())
                 q.sample.IA1 <- CALC.ANALYTIC.Q.MVLNORM(rel.abundance,
                                                        rel.var.covar.tall,
                                                        rel.hess.tall,
                                                        Pred_N$Pred_N,
                                                        start_yr,
                                                        sample.add_VAR_IA,
+                                                       beta = q.sample.IA2,
                                                        num.IA)
-                q.sample.IA2 <- 0
-                # q_vec <- q.sample.IA1[rel.abundance$Index]
-
-
             } else {
                 q.sample.IA1 <- q.sample.IA1
                 q.sample.IA2 <- q.sample.IA2
@@ -897,13 +893,14 @@ CALC.ANALYTIC.Q <- function(rel.abundance, Pred_N, start_yr,
 #' @param add_CV Coefficient of variation
 #' @param Pred_N Predicted population
 #' @param start_yr Initial year
+#' @param beta Density dependent catchability coefficient I = q*N^(1+beta)
 #' @param num.IA Index of abundance
 #'
 #' @return A numeric estimator for $q$.
 #' @export
 #'
 CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred_N, start_yr,
-                                    add_CV = 0, num.IA) {
+                                    add_CV = 0, beta, num.IA) {
     ## Vector to store the q values
     analytic.Q <- rep(NA, num.IA)
 
@@ -917,7 +914,7 @@ CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred
         IA.yrs <- IA$Year-start_yr + 1
 
         ## Estimate of q
-        analytic.Q[i] <-  exp(sum(HESS %*% log(IA$IA.obs / Pred_N[IA.yrs])) / sum(HESS))
+        analytic.Q[i] <-  exp(sum(HESS %*% log(IA$IA.obs / (Pred_N[IA.yrs]^(1+beta[i])))) / sum(HESS))
     }
     analytic.Q
 }
