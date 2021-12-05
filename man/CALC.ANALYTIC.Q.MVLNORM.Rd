@@ -12,6 +12,7 @@ CALC.ANALYTIC.Q.MVLNORM(
   Pred_N,
   start_yr,
   add_CV = 0,
+  beta,
   num.IA
 )
 }
@@ -27,6 +28,8 @@ CALC.ANALYTIC.Q.MVLNORM(
 \item{start_yr}{Initial year}
 
 \item{add_CV}{Coefficient of variation}
+
+\item{beta}{Density dependent catchability coefficient I = q*N^(1+beta)}
 
 \item{num.IA}{Index of abundance}
 }
