@@ -21,6 +21,7 @@ Imports:
     latex2exp,
     EnvStats,
     mvtnorm,
-    Matrix
+    Matrix,
+    MASS
 LinkingTo: Rcpp
 RoxygenNote: 7.1.1
