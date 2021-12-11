@@ -13,7 +13,6 @@
 #'
 #' @return Returns and saves a figure with the abundance and catch trajectories.
 #'
-#' @export
 plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_pred = TRUE, coolors = "#941B0C",     coolors2 = "#104F55") {
 
 
@@ -201,6 +200,62 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
         }
 
 
+
+
+
+
+        # ----- Plot zoom in
+        par(new = TRUE)
+        # N-trajectory
+        plot(y = NA, x = NA,
+             ylim = c(ymin, ymax),
+             xlim = c(min(abs.abundance$Year) - 5, max(abs.abundance$Year) + 5),
+             xlab = NA, ylab = NA, xaxt = "n", col.axis=coolors2, col = coolors2, col.lab= coolors2, font = 2)
+        abline(h = 0, col = coolors2)
+        mtext(side = 2, "Number of individuals", line = 1.6, font = 2, col=coolors2, adj = 0.6)
+        axis(side = 1, x_axis, font = 2)
+        mtext(side = 1, "Year", line = 1.6, font = 2)
+
+        # N Trajectory
+        # Credible interval
+        polygon(
+            x = c(Years,rev(Years)),
+            y = c(output_summary[3, ],rev(output_summary[4, ])),
+            col = adjustcolor(coolors2, alpha = 0.2), border = NA) # 95% CI
+        polygon( x = c(Years,rev(Years)),
+                 y = c(output_summary[5, ], rev(output_summary[6, ])),
+                 col = adjustcolor(coolors2, alpha = 0.5), border = NA) # 50% CI
+
+        # Median
+        lines( x = Years, y = output_summary[2, ], lwd = 3, col = coolors2) # Median
+
+        # Reference median
+        if(!is.null(Reference)){
+            lines( x = ref_years, y = reference_summary[2, ], lwd = 3, lty = 3) # Median
+        }
+
+        # Absolute abundance
+        points( x = abs.abundance$Year,
+                y = abs.abundance$N.obs,
+                col = 1, pch = 16, cex = 2)
+        arrows( x0 = abs.abundance$Year,
+                y0 = abs.abundance$Lower95,
+                x1 = abs.abundance$Year,
+                y1 = abs.abundance$Upper95,
+                length=0.05, angle=90, code=3, lwd = 3)
+
+        if(posterior_pred){
+            points( x = abs.abundance$Year + 1,
+                    y = posterior_pred_summary[2,],
+                    col = adjustcolor("Grey80", alpha.f = 1) , pch = 16, cex = 2)
+            arrows( x0 = abs.abundance$Year + 1,
+                    y0 = as.numeric(posterior_pred_summary[3,]),
+                    x1 = abs.abundance$Year + 1,
+                    y1 = as.numeric(posterior_pred_summary[4,]),
+                    length=0.05, angle=90, code=3, lwd = 3, col = adjustcolor("Grey80", alpha.f = 1))
+        }
+
+
         if(i > 1){ dev.off()}
     }
 }
@@ -294,9 +349,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
 
         # Predict
         N_hat <- SIR$resamples_trajectories[, paste0("N_", IA.yr.range[[i]])] # Estimates of N within IOA years
-        q2_tmp <- matrix(q2_est[,i], ncol = 1)
-        IndYear <- matrix(IA.yr.range[[i]] - min(IA.yr.range[[i]]), nrow = 1)
-        IA_pread[[i]] <- N_hat * q1_est[,i] * exp(q2_tmp %*% IndYear)
+        IA_pread[[i]] <-  q1_est[,i] * N_hat ^(q2_est[,i]+1)
 
         # Summarize
         IA_summary[[i]] <-  matrix(nrow = length(row_names), ncol = dim(IA_pread[[i]])[2])
@@ -319,7 +372,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
             for(j in 1:length(IA.yrs)){
                 IA_posterior_pred[[i]][,j] <- rlnorm(
                     n = nrow(IA_posterior_pred[[i]]),
-                    meanlog = log( q1_est[,rel.abundance.sub$Index[j]] * exp(q2_est[,rel.abundance.sub$Index[j]] * rel.abundance.sub$IndYear[j]) * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ),
+                    meanlog = log( q1_est[,rel.abundance.sub$Index[j]] * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ^ (q2_est[,rel.abundance.sub$Index[j]] + 1)),
                     sdlog = sqrt(diag(rel.var.covar.wide.sub))[j])
             }
 
@@ -429,10 +482,11 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
 #' @param priors Default = NULL, SIR realized priors or list of SIR realized priors. Plots in the order provided.
 #' @param reference Default = NULL, wether reference case is included in SIR
 #' @param probs Lower and upper quantiles to use for plot limits if lower and upper are not specified.
+#' @param target T/F. Include target year in plot (default = TRUE)
 #'
 #' @return Returns and saves a figure with the posterior densities of parameters.
 #' @export
-plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, priors = NULL, inc_reference = FALSE, probs = c(0.025, 0.975) ){
+plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, priors = NULL, inc_reference = FALSE, probs = c(0.025, 0.975), target = TRUE ){
 
     # Make into list
     if(class(SIR) == "SIR"){
@@ -446,8 +500,8 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
 
     if(inc_reference){
         posteriors_lwd <- rep(3, length(SIR))
-        posteriors_lty <- c(1, 1:(length(SIR)-1))
-        posteriors_col <- c("grey", rep(1, length(SIR)-1))
+        posteriors_lty <- rep(1, length(SIR))
+        posteriors_col <- c(1, "grey", rep(1, length(SIR)-2))
     }
 
     if(inc_reference == FALSE){
@@ -457,26 +511,25 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
     }
 
     if(!is.null(priors)){
-        if(inc_reference){
-            posteriors_lwd <- c(posteriors_lwd, rep(1, length(priors)))
-            posteriors_lty <- c(posteriors_lty, c( 1: ifelse(length(priors) > 1, c(1,(length(priors)-1)), 1) ))
-            posteriors_col <- c(posteriors_col, c("grey", rep(1, ifelse(length(priors) > 1, (length(priors)-1), 0))))
-            SIR <- c(SIR, priors)
-        }
-        if(inc_reference == FALSE){
-            posteriors_lwd <- c(posteriors_lwd, rep(1, length(priors)))
-            posteriors_lty <- c(posteriors_lty, c(1:(length(priors))))
-            posteriors_col <- c(posteriors_col, c(rep(1, length(priors))))
-            SIR <- c(SIR, priors)
-        }
+        posteriors_lwd <- c(posteriors_lwd, rep(1, length(priors)))
+        posteriors_lty <- c(posteriors_lty, c(1:(length(priors))))
+        posteriors_col <- c(posteriors_col, c(rep(1, length(priors))))
+        SIR <- c(SIR, priors)
     }
 
     # Vars of interest
     num.IA <- sort(unique(c( sapply(SIR, function(x) x$inputs$rel.abundance$Index))))
-    years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
-                            sapply(SIR, function(x) x$inputs$output.Years))))
-    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA), "add_VAR_IA")
-    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", num.IA, "}$"), paste0("$\beta_{q_{flt", num.IA,"}}$"), "$sigma_q$")
+    num.SLR <- 1:max( sapply(SIR, function(x) length(x$inputs$catch_multipliers)))
+    if(target){
+        years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
+                                sapply(SIR, function(x) x$inputs$output.Years))))
+    }
+    if(!target){
+        years <- sort(unique(c(sapply(SIR, function(x) x$inputs$output.Years))))
+    }
+    vars <- c("r_max", "K", "Pmsy", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA), paste0("catch_multiplier_", num.SLR), "catch_parameter", "add_VAR_IA")
+
+    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$sigma^2$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", num.IA, "}$"), paste0("$\beta_{q_{flt", num.IA,"}}$"), paste0("$SLR_", num.SLR-1,"$"), '$pi$', "$tau_q$")
 
 
     # Only select vars that have multiple unique parameters
@@ -493,17 +546,17 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
         # PNG
         if(j == 2){
             filename <- paste0(file_name, "_posterior_density", ".png")
-            png( file = filename , width=10, height = 110 / 25.4, family = "serif", units = "in", res = 300)
+            png( file = filename , width=10, height = 5, family = "serif", units = "in", res = 300)
         }
 
         # PDF
         if(j == 3){
             filename <- paste0(file_name, "_posterior_density", ".pdf")
-            pdf( file = filename , width=10, height = 110 / 25.4, family = "serif")
+            pdf( file = filename , width=10, height = 5, family = "serif")
         }
 
-        par(mfrow = c(2,ceiling(length(vars)/2) + 2))
-        par( mar=c(3, 0.05 , 0.5 , 0.55) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
+        par(mfrow = c(ceiling(length(vars)/4), 4 + 2))
+        par( mar=c(3, 0.25 , 0.5 , 0.55) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
 
         plot.new()
 
@@ -551,13 +604,15 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
                  ylab = NA, xlab = latex2exp::TeX(vars_latex[i]), yaxt = "n")
             mapply(lines, posterior_dens, lwd = posteriors_lwd, lty = posteriors_lty, col = posteriors_col[1:length(posterior_dens)])
 
-            if(i == ceiling(length(vars)/2))  {
-                plot.new()
-                plot.new()
+            if(i %in% seq(4, length(vars), by = 4))  {
+                if(i != length(vars)){
+                    plot.new()
+                    plot.new()
+                }
             }
 
 
-            if(i %in% c(1, ceiling(length(vars)/2) + 1) ) {
+            if(i %in% c(1, seq(4, length(vars), by = 4) + 1) ) {
                 mtext(side = 2, "Density", line = 1, cex= 0.75)
             }
 
