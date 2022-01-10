@@ -62,7 +62,7 @@ summary_table <- function( SIR, file_name = NULL){
   for(j in 1:nrow(SIR$resamples_trajectories)){
     # -- Sample q
     q_posteriors_tmp <- exp(MASS::mvrnorm(
-      n = 10000,
+      n = 5,
       mu = as.numeric(log(rel.abundance$IA.obs/N_hat[j,] ^ (q2_est[j,rel.abundance$Index] + 1)) - diag(rel.var.covar.wide)/2),
       Sigma = rel.var.covar.wide))
 
@@ -91,7 +91,6 @@ summary_table <- function( SIR, file_name = NULL){
   posterior_q_results[,2] <- round(sapply(q_posteriors, mean),3)
   posterior_q_results[,3:7] <- round(t(sapply(q_posteriors, quantile, probs= c(0.5, 0.025, 0.25, 0.75, 0.975))), 3)
   colnames(posterior_q_results) <- c("Parameter","Mean", "Median", "2.5% CI", "25% CI", "75% CI", "97.5% CI", "Unique")
-  results <- rbind(results, posterior_q_results)
 
   # Format things
   results[c(1,3:4),2:7] <- round(results[c(1,3:4),2:7], 3)
@@ -99,6 +98,7 @@ summary_table <- function( SIR, file_name = NULL){
   results[which(vars %in% depletion_vars),2:7] <- round(results[which(vars %in% depletion_vars),2:7], 3)
   results[which(vars %in% pop_vars),2:7] <- format(round(results[which(vars %in% pop_vars),2:7], 0),big.mark=",",scientific=FALSE)
   results[,8] <- format(round(results[,8], 0),big.mark=",",scientific=FALSE)
+  results <- rbind(results, posterior_q_results)
 
   if(!is.null(file_name)){
     write.csv(results, file = paste0(file_name, "_summary_table.csv"))

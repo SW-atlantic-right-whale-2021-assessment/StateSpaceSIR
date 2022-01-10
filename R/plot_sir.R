@@ -207,6 +207,8 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
 
 
 
+
+
 #' OUTPUT FUNCTION
 #'
 #' Function that provides a plot of the estimated indices of abundance a SIR  model including: median, 95%
@@ -296,7 +298,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
         N_hat <- SIR$resamples_trajectories[, paste0("N_", IA.yr.range[[i]])] # Estimates of N within IOA years
         q2_tmp <- matrix(q2_est[,i], ncol = 1)
         IndYear <- matrix(IA.yr.range[[i]] - min(IA.yr.range[[i]]), nrow = 1)
-        IA_pread[[i]] <- N_hat * q1_est[,i] * exp(q2_tmp %*% IndYear)
+        IA_pread[[i]] <-  q1_est[,i] * N_hat ^ (1 + q2_tmp)
 
         # Summarize
         IA_summary[[i]] <-  matrix(nrow = length(row_names), ncol = dim(IA_pread[[i]])[2])
@@ -319,7 +321,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
             for(j in 1:length(IA.yrs)){
                 IA_posterior_pred[[i]][,j] <- rlnorm(
                     n = nrow(IA_posterior_pred[[i]]),
-                    meanlog = log( q1_est[,rel.abundance.sub$Index[j]] * exp(q2_est[,rel.abundance.sub$Index[j]] * rel.abundance.sub$IndYear[j]) * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ),
+                    meanlog = log( q1_est[,rel.abundance.sub$Index[j]] * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ^ (q2_est[,rel.abundance.sub$Index[j]] + 1)),
                     sdlog = sqrt(diag(rel.var.covar.wide.sub))[j])
             }
 
@@ -531,7 +533,7 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
         for(j in 1:nrow(SIR[[k]]$resamples_trajectories)){
             # -- Sample q
             q_posteriors_tmp <- exp(MASS::mvrnorm(
-                n = 10000,
+                n = 5,
                 mu = as.numeric(log(rel.abundance$IA.obs/N_hat[j,] ^ (q2_est[j,rel.abundance$Index] + 1)) - diag(rel.var.covar.wide)/2),
                 Sigma = rel.var.covar.wide))
 
@@ -833,4 +835,187 @@ compare_posteriors <- function(SIR, model_names = NULL, file_name = NULL, bayes_
 
 
 
+
+
+#' OUTPUT FU#' OUTPUT FUNCTION
+#'
+#' Function that provides a plot of the estimated abundance trends and catch history from a SIR  model including: median, 95%
+#' credible interval, 50% credible interval, catch, and absolute indices of abundance.
+#'
+#' @param SIR A fitted SIR model
+#' @param Reference A fitted SIR model as the reference model
+#' @param file_name name of a file to identified the files exported by the
+#'   function. If NULL, does not save.
+#' @param posterior_pred Logical. If true, includes a posterior predictive distribution of the estimated IOA
+#' @param coolors Colors for abundance.
+#' @param coolors2 Colors for catch
+#'
+#' @return Returns and saves a figure with the abundance and catch trajectories.
+#'
+#' @export
+plot_abs_abundance <- function(SIR, Reference = NULL, file_name = NULL, posterior_pred = TRUE, coolors = "#941B0C",     coolors2 = "#104F55") {
+
+
+    # Extract SIR objects
+    x <- SIR$resamples_trajectories
+    abs.abundance <- SIR$inputs$abs.abundance
+    rel.abundance <- SIR$inputs$rel.abundance
+    catch.data <- SIR$catch_trajectories
+    N_priors <- SIR$inputs$priors_N_obs$pars
+
+    row_names <- c("mean", "median",
+                   "2.5%PI", "97.5%PI",
+                   "5%PI", "95%PI",
+                   "min", "max", "n")
+
+    # Extract N trajectories
+    output_summary <- matrix(nrow = length(row_names), ncol = dim(x)[2])
+    output_summary[1, ] <- sapply(x, mean)
+    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5,  0.025, 0.975, 0.25, 0.75))
+    output_summary[7, ] <- sapply(x, min)
+    output_summary[8, ] <- sapply(x, max)
+    output_summary[9, ] <- sapply(x, length)
+
+    output_summary <- data.frame(output_summary)
+    names(output_summary) <- names(x)
+    row.names(output_summary) <- row_names
+
+    if(!is.null(Reference)){
+        ref <- Reference$resamples_trajectories
+        reference_summary <- matrix(nrow = length(row_names), ncol = dim(ref)[2])
+        reference_summary[1, ] <- sapply(ref, mean)
+        reference_summary[2:6, ] <- sapply(ref, quantile, probs= c(0.5,  0.025, 0.975, 0.25, 0.75))
+        reference_summary[7, ] <- sapply(ref, min)
+        reference_summary[8, ] <- sapply(ref, max)
+        reference_summary[9, ] <- sapply(ref, length)
+        reference_summary <- data.frame(reference_summary)
+        names(reference_summary) <- names(ref)
+        row.names(reference_summary) <- row_names
+        ref_years <- as.numeric(gsub("N_", "", colnames(reference_summary)))
+    }
+
+
+
+    if(posterior_pred){
+        N_posterior_pred <- matrix(NA, ncol = nrow(abs.abundance), nrow = nrow(x))
+
+        for(i in 1:ncol(N_posterior_pred)){
+            N_posterior_pred[,i] <- rlnorm(
+                n = nrow(N_posterior_pred),
+                meanlog = log( x[,paste0("N_", abs.abundance$Year[i]) ] ),
+                sdlog = abs.abundance$Sigma[i] + as.numeric(as.character(SIR$resamples_output$add_CV[1]))
+            )
+        }
+
+        N_posterior_pred <- as.data.frame(N_posterior_pred)
+        posterior_pred_summary <- matrix(nrow = length(row_names), ncol = dim(N_posterior_pred)[2])
+        posterior_pred_summary[1, ] <- sapply(N_posterior_pred, mean)
+        posterior_pred_summary[2:6, ] <- sapply(N_posterior_pred, quantile, probs= c(0.5, 0.025, 0.975, 0.25, 0.75))
+        posterior_pred_summary[7, ] <- sapply(N_posterior_pred, min)
+        posterior_pred_summary[8, ] <- sapply(N_posterior_pred, max)
+        posterior_pred_summary[9, ] <- sapply(N_posterior_pred, length)
+
+        colnames(posterior_pred_summary) <- paste0("Posterior_predictive_N_", abs.abundance$Year)
+        rownames(posterior_pred_summary) <- row_names
+    }
+
+    # Extract catch trajectories
+    catch_summary <- matrix(nrow = length(row_names), ncol = dim(catch.data)[2])
+    catch_summary[1, ] <- sapply(catch.data, mean)
+    catch_summary[2:6, ] <- sapply(catch.data, quantile, probs= c(0.5, 0.025, 0.975, 0.25, 0.75))
+    catch_summary[7, ] <- sapply(catch.data, min)
+    catch_summary[8, ] <- sapply(catch.data, max)
+    catch_summary[9, ] <- sapply(catch.data, length)
+
+
+    # Get 95% CI and range
+    Years <- as.numeric(gsub("N_", "", colnames(output_summary)))
+    abs.abundance$Upper95 <- qlnorm(0.975, log(abs.abundance$N.obs), abs.abundance$Sigma)
+    abs.abundance$Lower95 <- qlnorm(0.025, log(abs.abundance$N.obs), abs.abundance$Sigma)
+
+    # Set up ranges for plots
+    ymax <- max(c(abs.abundance$N.obs, abs.abundance$Lower95, abs.abundance$Upper95))*1.2
+    ymin <- -0.2 * ymax
+
+    ymax_catch <- max(catch_summary[2:6, ])
+    ymax_catch <- ymax_catch * 2
+    ymin_catch <- 0
+
+    # Set up axis
+    x_axis <- seq((min(abs.abundance$Year)-3), (max(abs.abundance$Year)+3), by = 3)
+
+    y_axis <- seq(0, ymax , length.out = 5)
+    y_axis_catch <-  floor(seq(0,  max(catch_summary[2:6, ]) , length.out = 5)/1000) * 1000
+
+    # Plot trajectory
+    for(i in 1: (1 + as.numeric(!is.null(file_name)) * 2)){
+
+        # PNG
+        if(i == 2){
+            filename <- paste0(file_name, "_abs_abundance_fit", ".png")
+            png( file = filename , width=2, height = 80 / 25.4, family = "serif", units = "in", res = 300)
+        }
+
+        # PDF
+        if(i == 3){
+            filename <- paste0(file_name, "_abs_abundance_fit", ".pdf")
+            pdf( file = filename , width=2.5, height = 100 / 25.4, family = "serif")
+        }
+
+
+        # Plot configuration
+        par( mar=c(3, 3 , 0.5 , 0.5) , oma=c(0 , 0 , 0 , 0), tcl = -0.35, mgp = c(1.75, 0.5, 0))
+        # N-trajectory
+        plot(y = NA, x = NA,
+             ylim = c(0, ymax),
+             xlim = c(min(abs.abundance$Year)-3, max(abs.abundance$Year)+3),
+             xlab = NA, ylab = NA, xaxt = "n", col.axis=coolors2, col = coolors2, col.lab= coolors2, font = 2)
+        abline(h = 0, col = coolors2)
+        mtext(side = 2, "Number of individuals", line = 1.6, font = 2, col=coolors2, adj = 0.6)
+        axis(side = 1, x_axis, font = 2)
+        mtext(side = 1, "Year", line = 1.6, font = 2)
+
+        # N Trajectory
+        # Credible interval
+        polygon(
+            x = c(Years,rev(Years)),
+            y = c(output_summary[3, ],rev(output_summary[4, ])),
+            col = adjustcolor(coolors2, alpha = 0.2), border = NA) # 95% CI
+        polygon( x = c(Years,rev(Years)),
+                 y = c(output_summary[5, ], rev(output_summary[6, ])),
+                 col = adjustcolor(coolors2, alpha = 0.5), border = NA) # 50% CI
+
+        # Median
+        lines( x = Years, y = output_summary[2, ], lwd = 3, col = coolors2) # Median
+
+        # Reference median
+        if(!is.null(Reference)){
+            lines( x = ref_years, y = reference_summary[2, ], lwd = 3, lty = 3) # Median
+        }
+
+        # Absolute abundance
+        points( x = abs.abundance$Year,
+                y = abs.abundance$N.obs,
+                col = 1, pch = 16, cex = 2)
+        arrows( x0 = abs.abundance$Year,
+                y0 = abs.abundance$Lower95,
+                x1 = abs.abundance$Year,
+                y1 = abs.abundance$Upper95,
+                length=0.05, angle=90, code=3, lwd = 3)
+
+        if(posterior_pred){
+            points( x = abs.abundance$Year + 0.2,
+                    y = posterior_pred_summary[2,],
+                    col = adjustcolor("Grey80", alpha.f = 1) , pch = 16, cex = 2)
+            arrows( x0 = abs.abundance$Year + 0.2,
+                    y0 = as.numeric(posterior_pred_summary[3,]),
+                    x1 = abs.abundance$Year + 0.2,
+                    y1 = as.numeric(posterior_pred_summary[4,]),
+                    length=0.05, angle=90, code=3, lwd = 3, col = adjustcolor("Grey80", alpha.f = 1))
+        }
+
+
+        if(i > 1){ dev.off()}
+    }
+}
 
