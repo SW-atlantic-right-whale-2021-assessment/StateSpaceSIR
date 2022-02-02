@@ -219,11 +219,12 @@ plot_trajectory <- function(SIR, Reference = NULL, file_name = NULL, posterior_p
 #'   function. If NULL, does not save.
 #' @param posterior_pred Logical. If true, includes a posterior predictive distribution of the estimated IOA
 #' @param ioa_names names of indices of abundance used.
+#' @param sample_q_posterior Sample q posterior
 #'
 #' @return Returns and saves a figure with the IOA trajectories.
 #'
 #' @export
-plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = TRUE, coolors = "#104F55"){
+plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = TRUE, coolors = "#104F55", sample_q_posterior = TRUE){
 
     rel.abundance <- SIR$inputs$rel.abundance
     row_names <- c("mean", "median",
@@ -260,13 +261,6 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
     rel.abundance$Upper95 <- qlnorm(0.975, mean = log(rel.abundance$IA.obs), sd = sqrt(diag(rel.var.covar.wide)))
     rel.abundance$Lower95 <- qlnorm(0.025, mean = log(rel.abundance$IA.obs), sd = sqrt(diag(rel.var.covar.wide)))
 
-
-    ## Get relative-abundance year relative to each index (1:max_yr_index)
-    group.center <- function(var,grp) {
-        return(var-tapply(var,grp,min,na.rm=T)[grp])
-    }
-    rel.abundance$IndYear <- group.center(rel.abundance$Year, rel.abundance$Index)
-
     # Predict IOA
     q1_cols <- grep("q_IA1", colnames(SIR$resamples_output)) # Columns of resample Q estimates
     q1_est <- SIR$resamples_output[, q1_cols]
@@ -275,6 +269,32 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
     q2_cols <- grep("q_IA2", colnames(SIR$resamples_output)) # Columns of resample Q estimates
     q2_est <- SIR$resamples_output[, q2_cols]
     q2_est <- as.matrix(q2_est, ncol = length(q2_cols))
+
+    # Posterior of q
+    q_posteriors <- list()
+    indices <- unique(rel.abundance$Index)
+    IA.yrs <- rel.abundance$Year
+    N_hat <- SIR$resamples_trajectories[, paste0("N_", IA.yrs)] # Estimates of N within IOA years
+
+    # -- Loop through posterior draws
+    if(sample_q_posterior){
+        for(j in 1:nrow(SIR$resamples_trajectories)){
+            # -- Sample q
+            q_posteriors_tmp <- exp(MASS::mvrnorm(
+                n = 1,
+                mu = as.numeric(log(rel.abundance$IA.obs/(N_hat[j,] ^ (1+q2_est[j,rel.abundance$Index]))) - diag(rel.var.covar.wide)/2),
+                Sigma = rel.var.covar.wide))
+
+            # -- Assign to list
+            for(i in indices){
+                if(j == 1){
+                    q_posteriors[[i]] <- q_posteriors_tmp[which(rel.abundance$Index == i)]
+                } else {
+                    q_posteriors[[i]] <- rbind(q_posteriors[[i]], c(q_posteriors_tmp[which(rel.abundance$Index == i)]))
+                }
+            }
+        }
+    }
 
 
     # Setup objects
@@ -286,7 +306,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
     IA_posterior_pred_sum <- list()
 
     # Predict and calculate summary
-    for(i in 1:length(q1_cols)){
+    for(i in 1:length(q1_cols)){ # Loop across indices
 
         # Get IOA specifications
         rel.abundance.sub <- rel.abundance[which(rel.abundance$Index == i),]
@@ -294,11 +314,24 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
         IA.yrs <- rel.abundance.sub$Year
         IA.yr.range[[i]] <- c((min(IA.yrs)):(max(IA.yrs))) # Range +- 1 of IOA years
 
-        # Predict
+        # Get N and Q2
         N_hat <- SIR$resamples_trajectories[, paste0("N_", IA.yr.range[[i]])] # Estimates of N within IOA years
         q2_tmp <- matrix(q2_est[,i], ncol = 1)
-        IndYear <- matrix(IA.yr.range[[i]] - min(IA.yr.range[[i]]), nrow = 1)
-        IA_pread[[i]] <-  q1_est[,i] * N_hat ^ (1 + q2_tmp)
+
+        # Loop acros q posteriors and predict
+        if(sample_q_posterior){
+            for(j in 1:length(IA.yrs)){
+                IA_pread_tmp <- q_posteriors[[i]][,j] * N_hat ^ (1 + q2_tmp) # Used posterior q
+                if(j == 1){
+                    IA_pread[[i]] <-  IA_pread_tmp
+                } else{
+                    IA_pread[[i]] <-  rbind(IA_pread[[i]], IA_pread_tmp)
+                }
+            }
+        }else{
+            IA_pread[[i]] <- q1_est[,i] * N_hat ^ (1 + q2_tmp) # Use analytic q
+        }
+
 
         # Summarize
         IA_summary[[i]] <-  matrix(nrow = length(row_names), ncol = dim(IA_pread[[i]])[2])
@@ -312,17 +345,24 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
         names(IA_summary[[i]]) <- paste0("IA", i, "_", IA.yr.range[[i]])
         row.names(IA_summary[[i]]) <- row_names
 
+        # Plot limits
+        ymax[i] <- max(unlist(c(IA_summary[[i]][2:6,], rel.abundance.sub$Lower95, rel.abundance.sub$Upper95))) # Max of posterior
+
 
         # Get posterior predictive
         if(posterior_pred){
-            IA_posterior_pred[[i]] <- matrix(NA, nrow = nrow(SIR$resamples_trajectories), ncol = length(IA.yrs))
-            IA_posterior_pred_sum[[i]] <-  matrix(nrow = length(row_names), ncol = length(IA.yrs))
 
-            for(j in 1:length(IA.yrs)){
-                IA_posterior_pred[[i]][,j] <- rlnorm(
-                    n = nrow(IA_posterior_pred[[i]]),
-                    meanlog = log( q1_est[,rel.abundance.sub$Index[j]] * SIR$resamples_trajectories[, paste0("N_", IA.yrs[j])] ^ (q2_est[,rel.abundance.sub$Index[j]] + 1)),
-                    sdlog = sqrt(diag(rel.var.covar.wide.sub))[j])
+            # Objects to save
+            IA_posterior_pred[[i]] <- matrix(NA, nrow = nrow(IA_pread[[i]]), ncol = length(IA.yrs))
+            IA_posterior_pred_sum[[i]] <-  matrix(nrow = length(row_names), ncol = length(IA.yrs))
+            IndYear <- IA.yrs - min(IA.yrs)+1
+
+            # Simulate from posterior
+            for(j in 1:nrow(IA_pread[[i]])){ # Loop across posterior draws
+                IA_posterior_pred[[i]][j,] <- exp(MASS::mvrnorm(
+                    n = 1,
+                    mu = as.numeric(log(IA_pread[[i]][j,IndYear]) - diag(rel.var.covar.wide)/2),
+                    Sigma = rel.var.covar.wide))
             }
 
             IA_posterior_pred[[i]] <- data.frame(IA_posterior_pred[[i]])
@@ -338,11 +378,9 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
             IA_posterior_pred_sum[[i]] <- data.frame(IA_posterior_pred_sum[[i]])
             names(IA_posterior_pred_sum[[i]]) <- paste0("IA", i, "_", IA.yrs)
             row.names(IA_posterior_pred_sum[[i]]) <- row_names
-        }
 
-        # Get plot limits
-        ymax[i] <- max(unlist(c(IA_summary[[i]][2:6,], rel.abundance.sub$Lower95, rel.abundance.sub$Upper95))) # Max of posterior
-        if(posterior_pred){
+
+            # update plot limits
             ymax[i] <- max(unlist(c(ymax[i], IA_posterior_pred_sum[[i]][2:6,], rel.abundance.sub$Lower95, rel.abundance.sub$Upper95))) # Max of posterior predictive
         }
     }
@@ -534,7 +572,7 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
             # -- Sample q
             q_posteriors_tmp <- exp(MASS::mvrnorm(
                 n = 5,
-                mu = as.numeric(log(rel.abundance$IA.obs/N_hat[j,] ^ (q2_est[j,rel.abundance$Index] + 1)) - diag(rel.var.covar.wide)/2),
+                mu = as.numeric(log(rel.abundance$IA.obs/(N_hat[j,] ^ (1+q2_est[j,rel.abundance$Index]))) - diag(rel.var.covar.wide)/2),
                 Sigma = rel.var.covar.wide))
 
             # q_est <- exp(sum(rel.hess.wide %*% as.numeric(log(rel.abundance$IA.obs/N_hat[j,] ^ (q2_est[j,rel.abundance$Index] + 1))))/(sum(rel.hess.wide))) # q_i
@@ -542,9 +580,9 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
             # -- Assign to list
             for(i in indices){
                 if(j == 1){
-                    q_posteriors[[k]][[i]] <- c(q_posteriors_tmp[,rel.abundance$Index[which(rel.abundance$Index == i)]])
+                    q_posteriors[[k]][[i]] <- c(q_posteriors_tmp[,which(rel.abundance$Index == i)])
                 } else {
-                    q_posteriors[[k]][[i]] <- c(q_posteriors[[k]][[i]], c(q_posteriors_tmp[,rel.abundance$Index[which(rel.abundance$Index == i)]]))
+                    q_posteriors[[k]][[i]] <- c(q_posteriors[[k]][[i]], c(q_posteriors_tmp[,which(rel.abundance$Index == i)]))
                 }
             }
         }

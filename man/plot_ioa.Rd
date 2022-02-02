@@ -9,7 +9,8 @@ plot_ioa(
   file_name = NULL,
   ioa_names = NULL,
   posterior_pred = TRUE,
-  coolors = "#104F55"
+  coolors = "#104F55",
+  sample_q_posterior = TRUE
 )
 }
 \arguments{
@@ -21,6 +22,8 @@ function. If NULL, does not save.}
 \item{ioa_names}{names of indices of abundance used.}
 
 \item{posterior_pred}{Logical. If true, includes a posterior predictive distribution of the estimated IOA}
+
+\item{sample_q_posterior}{Sample q posterior}
 }
 \value{
 Returns and saves a figure with the IOA trajectories.

@@ -63,7 +63,7 @@ summary_table <- function( SIR, file_name = NULL){
     # -- Sample q
     q_posteriors_tmp <- exp(MASS::mvrnorm(
       n = 5,
-      mu = as.numeric(log(rel.abundance$IA.obs/N_hat[j,] ^ (q2_est[j,rel.abundance$Index] + 1)) - diag(rel.var.covar.wide)/2),
+      mu = as.numeric(log(rel.abundance$IA.obs/(N_hat[j,] ^ (1+q2_est[j,rel.abundance$Index]))) - diag(rel.var.covar.wide)/2),
       Sigma = rel.var.covar.wide))
 
     # q_est <- exp(sum(rel.hess.wide %*% as.numeric(log(rel.abundance$IA.obs/N_hat[j,] ^ (q2_est[j,rel.abundance$Index] + 1))))/(sum(rel.hess.wide))) # q_i
@@ -71,9 +71,9 @@ summary_table <- function( SIR, file_name = NULL){
     # -- Assign to list
     for(i in indices){
       if(j == 1){
-        q_posteriors[[i]] <- c(q_posteriors_tmp[,rel.abundance$Index[which(rel.abundance$Index == i)]])
+        q_posteriors[[i]] <- c(q_posteriors_tmp[,which(rel.abundance$Index == i)])
       } else {
-        q_posteriors[[i]] <- c(q_posteriors[[i]], c(q_posteriors_tmp[,rel.abundance$Index[which(rel.abundance$Index == i)]]))
+        q_posteriors[[i]] <- c(q_posteriors[[i]], c(q_posteriors_tmp[,which(rel.abundance$Index == i)]))
       }
     }
   }
