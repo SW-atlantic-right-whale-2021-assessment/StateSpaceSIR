@@ -1,7 +1,7 @@
 # StateSpaceSIR
-This is a package to implement a state-space generalized logistic model in a Bayesian framework using a Sampling-Importance-Resampling (SIR) algorithm adapted from Zerbini et al. (2011) and Zerbini et al (2019). The SIR algorithm follows that implemented by McAllister et al. (1994).
+This is a package to implement a state-space generalized logistic model in a Bayesian framework using a Sampling-Importance-Resampling (SIR) algorithm adapted following Romero et al. (2022). The code has been adapted from from Zerbini et al. (2011) and Zerbini et al (2019). The SIR algorithm follows that implemented by McAllister et al. (1994).
 
-Code and data to run the analysis in Romero et al (In Revision) can be found at: https://github.com/SW-atlantic-right-whale-2021-assessment
+Code and data to run the analysis in Romero et al. (2022) can be found at: https://github.com/SW-atlantic-right-whale-2021-assessment
 
 # Population dynamics
 The population dynamics are modeled as follows:
@@ -96,7 +96,7 @@ Estimated population trajectory and time series of catches of WSA humpback whale
 # References
 McAllister, M. K., Pikitch, E. K., Punt, A. E., Hilborn, R. 1994. A Bayesian approach to stock assessment and harvest decisions using the sampling/importance resampling algorithm. Canadian Journal of Fisheries and Aquatic Sciences. 12, 2673-2687. 
 
-Romero et al. In Revision. Historical reconstruction of the population dynamics of southern right whales in the southwestern Atlantic Ocean.
+Romero, M.A., Coscarella, M.A., Adams, G.D. et al. Historical reconstruction of the population dynamics of southern right whales in the southwestern Atlantic Ocean. Sci Rep 12, 3324 (2022). https://doi.org/10.1038/s41598-022-07370-6
 
 Zerbini, A. N., Ward, E., Engel, M., Andriolo, A., Kinas, P. G. 2011. A Bayesian assessment of the conservation status of humpback whales (Megaptera novaeangliae) in the western South Atlantic Ocean (Breeding Stock A). J. Cetacean Res. Manage. (special issue 3). 131-144. 
 
