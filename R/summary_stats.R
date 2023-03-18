@@ -1,3 +1,54 @@
+
+#' OUTPUT FUNCTION
+#'
+#' Function that provides a summary of SIR outputs including: mean, median, 95%
+#' credible interval, 90% predicitive interval, max, and sample size.
+#'
+#' @param x A data.frame of mcmc samples.
+#' @param object Name of the model object as specified by the user.
+#' @param file_name name of a file to identified the files exported by the
+#'   function. If NULL, will not save .csv file.
+#'
+#' @return Returns a data.frame with summary of SIR outputs
+#' @export
+#' @examples
+#' x  <-  rnorm(1000, 5, 7)
+#' y  <-  rnorm(1000, 6, 9)
+#' df <- data.frame(x = x, y = y)
+#' summary_sir( df , object = "example_summary")
+summary_sir <- function(x, object = "USERDEFINED", file_name = "NULL") {
+
+    # Change name if not supplied
+    if(object == "USERDEFINED"){
+        if(TRUE %in% grepl(pattern = "N_", names(x), ignore.case = FALSE)){object == "trajectory_summary"}
+        if(TRUE %in% grepl(pattern = "r_max", names(x), ignore.case = FALSE)){object == "parameter_summary"}
+    }
+
+    row_names <- c("mean", "median",
+                   "2.5%PI", "97.5%PI",
+                   "5%PI", "95%PI",
+                   "min", "max", "n")
+
+    output_summary <- matrix(nrow = length(row_names), ncol = dim(x)[2])
+    output_summary[1, ] <- sapply(x, mean)
+    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5, 0.025, 0.975, 0.05, 0.95))
+    output_summary[7, ] <- sapply(x, min)
+    output_summary[8, ] <- sapply(x, max)
+    output_summary[9, ] <- sapply(x, length)
+
+    output_summary <- data.frame(output_summary)
+    names(output_summary) <- names(x)
+    row.names(output_summary) <- row_names
+    noquote(format(output_summary, digits = 3, scientific = FALSE))
+
+    if(!is.null(file_name)){
+        write.csv(output_summary,
+                  paste0(file_name, "_", object, ".csv"))
+    }
+
+    list(object = object, date=Sys.time(), output_summary = output_summary)
+}
+
 #' Function to write tables of logistic model parameter and derived quantities for StateSpaceSIR similar to Table 5 from Zerbini et al (2011).
 #'
 #' @param SIR Resample summary from StateSpaceSIR
@@ -8,8 +59,15 @@ summary_table <- function( SIR, file_name = NULL){
 
   # Vars of interest
   years <- sort(c( SIR$inputs$target.Yr, SIR$inputs$output.Years))
+
+  if(SIR$inputs$allee_model == 0){
   vars <- c("r_max", "K", "z", "Pmsy", "var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
   vars_latex <- c("$r_{max}$", "$K$", "$z$", "$Pmsy$","$sigma$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", 1:num.IA, "}$"), paste0("$\beta_{q_{flt", 1:num.IA,"}}$"), "$sigma_q$")
+  } else{
+
+      vars <- c("r_max", "K", "z", "Pmsy", "P50","var_N", "Nmin", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
+      vars_latex <- c("$r_{max}$", "$K$", "$z$", "$Pmsy$", "$P_{50}$","$sigma$", "$N_{min}$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", 1:num.IA, "}$"), paste0("$\beta_{q_{flt", 1:num.IA,"}}$"), "$sigma_q$")
+  }
 
 
   pop_vars <- c("K", "Nmin", paste0("N", years))

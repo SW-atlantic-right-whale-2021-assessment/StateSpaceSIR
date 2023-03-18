@@ -7,7 +7,8 @@
 #' likelihoods and the output functions
 #'
 #' @param file_name name of a file to identified the files exported by the
-#'   function
+#'   function#'
+#' @param allee_model Switch to determine the depensation model. 0 = no Allee effect; 1 = Hilborn et al 2014 P50 Allee Effect; 2 = Logistic Allee effect; 3 = Lin and Li 2002; 4 = Haider et al 2017. The depensation parameter is defined by \code{P50} using \link{make_prior_list}.
 #' @param n_resamples number of resamples to compute the marginal posterior
 #'   distributions
 #' @param priors List of priors, usually generated using \link{make_prior_list}.
@@ -32,6 +33,7 @@
 #'   NOT USED
 #' @param count.data.key key to speficy in count data are used. Default is
 #'   FALSE. NOT USED
+#' @param min_rmax Upper bound on rmax sampling (default to 0.118)
 #' @param growth.rate.obs observed growth rate (1st element) and standard error
 #'   (2nd element) as in Zerbni et al. (2011). If third element is FALSE, the
 #'   growth rate is not included in the likelihood
@@ -55,6 +57,7 @@
 #'                 catch_sample = make_prior(runif, 0, 1),
 #'                 z = make_prior(2.39),
 #'                 Pmsy = make_prior(use = FALSE),
+#'                 P50 = make_prior(0),
 #'                 q_IA1 = make_prior(use = FALSE),
 #'                 q_IA2 = make_prior(0),
 #'                 q_count = make_prior(use = FALSE)
@@ -67,6 +70,7 @@
 #'
 #' \dontrun{
 #' StateSpaceSIR(file_name = "test.N2005",
+#'              allee_model = 0,
 #'              n_resamples = 100,
 #'              priors = make_prior_list(),
 #'              catch_multipliers = make_multiplier_list(),
@@ -87,6 +91,7 @@
 #'              control = sir_control())
 #' }
 StateSpaceSIR <- function(file_name = "NULL",
+                          allee_model = 0,
                           n_resamples = 1000,
                           priors = make_prior_list(),
                           catch_multipliers = make_multiplier_list(),
@@ -99,12 +104,15 @@ StateSpaceSIR <- function(file_name = "NULL",
                           rel.abundance.key = TRUE,
                           count.data = NULL,
                           count.data.key = FALSE,
+                          min_rmax = 0.118,
                           growth.rate.obs = c(0.074, 0.033, TRUE),
                           growth.rate.Yrs = c(1995, 1996, 1997, 1998),
                           catch.data = Catch.data,
                           realized_prior = FALSE,
+                          seed = 666,
                           control = sir_control()) {
     begin.time <- Sys.time()
+    set.seed(666)
 
     ################################
     # Assigning variables
@@ -204,21 +212,24 @@ StateSpaceSIR <- function(file_name = "NULL",
 
 
     ## Function to calculate Z if Pmsy is used
-    NmsyKz <- function(z,NmsyK) { 1-(z+1)*NmsyK^z }
+    NmsyKz <- function(z,Pmsy) { 1-(z+1)*Pmsy^z }
     if(priors$z$use & priors$Pmsy$use){
         warning("Priors were set on both Pmsy and Z, using the prior on Z")
     }
 
     ## Sample from prior for `z` or Pmsy (usually constant) if constant
-    if (priors$z$use) {
-        if(priors$z$class == "constant"){
-            sample.z <- priors$z$rfn()
-            sample.Pmsy <- uniroot(NmsyKz,z=sample.z,lower=0,upper=1)$root
-        }
-    } else {
-        if(priors$Pmsy$class == "constant"){
-            sample.Pmsy <- priors$Pmsy$rfn()
-            sample.z <- uniroot(NmsyKz,NmsyK=sample.Pmsy,lower=1,upper=100)$root
+    # - No depensation
+    if(allee_model == 0){
+        if (priors$z$use) {
+            if(priors$z$class == "constant"){
+                sample.z <- priors$z$rfn()
+                sample.Pmsy <- uniroot(NmsyKz,z=sample.z,lower=0,upper=1)$root
+            }
+        } else {
+            if(priors$Pmsy$class == "constant"){
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- uniroot(NmsyKz,Pmsy=sample.Pmsy,lower=1,upper=100)$root
+            }
         }
     }
 
@@ -230,7 +241,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 
     #Creating output vectors
     #-------------------------------------
-    sir_names <- c("r_max", "K", "var_N", "z", "Pmsy", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
+    sir_names <- c("r_max", "K", "var_N", "z", "Pmsy", "P50", paste0("catch_multiplier_", 1:length(catch_multipliers)) , "catch_parameter",
                    "sample.N.obs", "add_CV", "add_VAR_IA","Nmin", "YearMin",
                    "violate_MVP", paste0("N", target.Yr), paste0("N", output.Yrs),
                    paste0("ROI_IA", unique(rel.abundance$Index)),
@@ -269,7 +280,7 @@ StateSpaceSIR <- function(file_name = "NULL",
 
         #Sampling for r_max
         sample.r_max <- priors$r_max$rfn()
-        while (sample.r_max > 0.118) {
+        while (sample.r_max > min_rmax) {
             sample.r_max <- priors$r_max$rfn()
         }
 
@@ -293,16 +304,67 @@ StateSpaceSIR <- function(file_name = "NULL",
         sample.var_N <- priors$var_N$rfn()
         sample.proc.error <- rlnorm(projection.Yrs-1, meanlog = 0, sdlog = sqrt(sample.var_N)) # Random process error
 
+        ## Sample depensation parameter
+        sample.P50 = priors$P50$rfn()
+
         ## Sample from prior for `z` or Pmsy (usually constant) if random
-        if (priors$z$use) {
-            if(priors$z$class == "function"){
-                sample.z <- priors$z$rfn()
-                sample.Pmsy <- uniroot(NmsyKz,z=sample.z,lower=0,upper=1)$root
+        # - Depensation set by allee_model:
+        # -- 0 = no Allee effect; 1 = Hilborn et al 2014 P50 Allee Effect; 2 = Logistic Allee effect; 3 = Lin and Li 2002; 4 = Haider et al 2017.
+        if(allee_model == 0){
+            if (priors$z$use) {
+                if(priors$z$class == "function"){
+                    sample.z <- priors$z$rfn()
+                    sample.Pmsy <- uniroot(NmsyKz,z=sample.z,lower=0,upper=1)$root
+                }
+            } else {
+                if(priors$Pmsy$class == "function"){
+                    sample.Pmsy <- priors$Pmsy$rfn()
+                    sample.z <- uniroot(NmsyKz,Pmsy=sample.Pmsy,lower=1,upper=100)$root
+                }
             }
-        } else {
-            if(priors$Pmsy$class == "function"){
+        }
+
+        if(allee_model == 1){ # Hilborn et al 2014
+            if (priors$z$use) {
+                sample.z <- priors$z$rfn()
+                sample.Pmsy <- uniroot(pmsy_z_hilborn,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+            } else {
                 sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- uniroot(NmsyKz,NmsyK=sample.Pmsy,lower=1,upper=100)$root
+                sample.z <- uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
+
+            }
+        }
+
+        if(allee_model == 2){ # Logistic
+            if (priors$z$use) {
+                sample.z <- priors$z$rfn()
+                sample.Pmsy <- uniroot(pmsy_z_logistic,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+            } else {
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
+
+            }
+        }
+
+        if(allee_model == 3){ # Lin and Li 2002
+            if (priors$z$use) {
+                sample.z <- priors$z$rfn()
+                sample.Pmsy <- uniroot(pmsy_z_linli,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+            } else {
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
+
+            }
+        }
+
+        if(allee_model == 4){ # Haider et al 2017
+            if (priors$z$use) {
+                sample.z <- priors$z$rfn()
+                sample.Pmsy <- uniroot(pmsy_z_haider,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+            } else {
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
+
             }
         }
 
@@ -334,8 +396,10 @@ StateSpaceSIR <- function(file_name = "NULL",
         ## Conduct logistic bisection
         sample.K <-  try(LOGISTIC.BISECTION.K(K.low = control$K_bisect_lim[1],
                                               K.high = 1e8,
+                                              allee_model,
                                               r_max = sample.r_max,
                                               z = sample.z,
+                                              P50 = sample.P50,
                                               num_Yrs = bisection.Yrs,
                                               start_yr = start_yr,
                                               target.Pop = sample.N.obs,
@@ -356,10 +420,12 @@ StateSpaceSIR <- function(file_name = "NULL",
 
         #Computing the predicted abundances with the samples from the priors
         #----------------------------------------
-        Pred_N <- GENERALIZED_LOGISTIC(r_max = sample.r_max,
+        Pred_N <- GENERALIZED_LOGISTIC(allee_model = allee_model,
+                                       r_max = sample.r_max,
                                        K = sample.K,
                                        N1 = sample.K,
                                        z = sample.z,
+                                       P50 = sample.P50,
                                        start_yr = start_yr,
                                        num_Yrs = projection.Yrs,
                                        catches = catches,
@@ -393,13 +459,13 @@ StateSpaceSIR <- function(file_name = "NULL",
             if (!priors$q_IA1$use) {
                 q.sample.IA2 <- replicate(num.IA, priors$q_IA2$rfn())
                 q.sample.IA1 <- CALC.ANALYTIC.Q.MVLNORM(rel.abundance,
-                                                       rel.var.covar.tall,
-                                                       rel.hess.tall,
-                                                       Pred_N$Pred_N,
-                                                       start_yr,
-                                                       sample.add_VAR_IA,
-                                                       beta = q.sample.IA2,
-                                                       num.IA)
+                                                        rel.var.covar.tall,
+                                                        rel.hess.tall,
+                                                        Pred_N$Pred_N,
+                                                        start_yr,
+                                                        sample.add_VAR_IA,
+                                                        beta = q.sample.IA2,
+                                                        num.IA)
             } else {
                 q.sample.IA1 <- q.sample.IA1
                 q.sample.IA2 <- q.sample.IA2
@@ -550,6 +616,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                             sample.var_N,
                                             sample.z,
                                             sample.Pmsy,
+                                            sample.P50,
                                             sample.catch_multipliers,
                                             sample.catch_parameter,
                                             sample.N.obs,
@@ -648,7 +715,8 @@ StateSpaceSIR <- function(file_name = "NULL",
                         resamples_output = resamples_output,
                         resamples_trajectories = resamples_trajectories,
                         catch_trajectories = catch_trajectories,
-                        inputs = list(draws = draw,
+                        inputs = list(allee_model = allee_model,
+                                      draws = draw,
                                       n_resamples = n_resamples,
                                       prior_r_max = priors$r_max,
                                       catch_multipliers = catch_multipliers,
@@ -670,487 +738,4 @@ StateSpaceSIR <- function(file_name = "NULL",
     class(return_list) <- "SIR" # Defines class for object
 
     return(return_list)
-}
-
-
-#' PREDICTED GROWTH RATE
-#'
-#' \code{PRED.GROWTH.RATE} computes the predicted growth rate if such
-#' information is available from an independent estimate rather than being
-#' estimated from data. Growth rate is calculated as: $$r_{t_0 - t_{fin}}^{pred}
-#' = \frac{ \sum_{t = t_0} ^{t_{fin - 1}} ln \left( \frac{N_{t+1}^{pred}} {
-#' N_t^{pred}} \right) } { t_{fin} - t_0 } = \frac{ ln \left( N_{fin}^{pred}
-#' \right) - ln \left( N_{0}^{pred} \right)} { t_{fin} - t_0 }$$ where
-#' $N^{pred}$ is the model predicted population size, in numbers, at time $t$ or
-#' $t+1$ in years, $t_0$ is the start year of the equation (1995 in Zerbini et
-#' al. 2011), and $t_{fin}$ is the last year of the equation (1998 in Zerbini et
-#' al. 2011).
-#'
-#' @param growth.rate.Yrs The years to be used for growth rate computation. 1995 - 1998 are used in Zerbini et al. 2011.
-#' @param Pred_N Time series of predicted abundance, in numbers, from \code{\link{GENERALIZED_LOGISTIC}}.
-#' @param start_yr The first year of the projection (assumed to be the first year in the catch series).
-#'
-#' @return A numeric scalar representing predicted growth rate.
-#'
-#' @export
-#' @examples
-#' growth.rate.Yrs  <-  c(1995:1998)
-#' Pred_N <- c(1000, 1500, 1500, 2000)
-#' start_yr  <-  1995
-#' PRED.GROWTH.RATE(growth.rate.Yrs, Pred_N, start_yr=start_yr)
-PRED.GROWTH.RATE <- function(growth.rate.Yrs, Pred_N, start_yr = start_yr) {
-    ## Computing the growth rate years
-    GR.Yrs <- growth.rate.Yrs - start_yr + 1
-    Pred_N.GR <- Pred_N[GR.Yrs]
-
-    ## FIXME Just return this line?
-    Pred.GR <- (log(Pred_N.GR[length(Pred_N.GR)]) -
-                    log(Pred_N.GR[1])) / (length(Pred_N.GR) - 1)
-
-    Pred.GR
-}
-
-#' Computes the predicted rate of increase for a set of specified years for
-#' comparison with trends estimated separately with any of the indices of
-#' abundance or count data
-#'
-#' @param data Count data or relative abundance index to use
-#' @param Pred_N Number of individuals predicted
-#' @param start_yr Initial year
-#'
-#' @return Vector of rates of increase, one per index
-#' @export
-#'
-COMPUTING.ROI <- function(data = data, Pred_N = Pred_N, start_yr = NULL) {
-    num.indices <- max(data$Index)
-    Pred.ROI <- rep(NA, num.indices)
-
-    for (i in 1:num.indices) {
-        index.ini.year <- (head(subset(data, Index == i)$Year, 1) - start_yr)
-        index.final.year <- (tail(subset(data, Index == i)$Year, 1) - start_yr)
-        elapsed.years <- index.final.year - index.ini.year
-
-        Pred.ROI[i] <- exp((log(Pred_N[index.final.year]) -
-                                log(Pred_N[index.ini.year])) /
-                               (elapsed.years)) - 1
-    }
-    Pred.ROI
-}
-
-#' Calculate a target K for the bisection method
-#'
-#' @param r_max The maximum net recruitment rate ($r_{max}$).
-#' @param K Pre-expoitation population size in numbers or biomass
-#'   (depending on input).
-#' @param N1 Population size in numbers or biomass at year 1 (generally
-#'   assumed to be K).
-#' @param z Generalized logistic shape parameter, determines population
-#'   size where productivity is masimum (assumed to be 2.39 by the ISC
-#'   SC).
-#' @param num_Yrs The number of projection years. Set as the last year
-#'   in the catchor abundance series whichever is most recent, minus the
-#'   start year.
-#' @param start_yr First year of the projection (assumed to be the first
-#'   year in the catch series).
-#' @param target.Pop Target population size.
-#' @param catches Catch time series. Cannot include NAs,
-#' @param proc_error The time series of lognormal process errors. Currently
-#' does not handle NAs or 0s
-#' @param MVP Minimum Viable Population Size; `4 * num.haplotypes`
-#'
-#' @return Vector of differences between predicted population and target
-#'   population.
-#' @export
-#'
-#' @examples
-#' TARGET.K(r_max, K, N1, z, start_yr=start_yr, num_Yrs=bisection.Yrs,
-#'          target.Pop=target.Pop, catches=catches, MVP=MVP)
-TARGET.K <- function(r_max, K, N1, z,
-                     num_Yrs, start_yr,
-                     target.Pop, catches, proc_error,
-                     MVP = 0) {
-
-    Pred_N <- GENERALIZED_LOGISTIC(r_max = r_max,
-                                   K = K,
-                                   N1 = K,
-                                   z = z,
-                                   start_yr = start_yr,
-                                   num_Yrs = num_Yrs,
-                                   catches = catches,
-                                   proc_error = proc_error,
-                                   MVP = MVP)
-    Pred_N$Pred_N[num_Yrs] - target.Pop
-}
-
-#' LOGISTIC BISECTION
-#'
-#' Method of Butterworth and Punt (1995) where the prior distribution of the
-#' current absolute abundance $N_{2005}$ and maximum net recruitment rate
-#' \code{r_max} are sampled and then used to determine the unique value of the
-#' population abundance $N$ in \code{start_yr} (assumed to correspond to
-#' carrying capacity $K$). Requires \code{\link{TARGET.K}} and subsequent
-#' dependencies.
-#'
-#' @param K.low Lower bound for $K$ when preforming the bisection method of Punt
-#'   and Butterworth (1995). Default is 1.
-#' @param K.high Upper bound for $K$ when preforming the bisection method of
-#'   Punt and Butterworth (1995). Default is 500,000.
-#' @param r_max The maximum net recruitment rate ($r_{max}$).
-#' @param z The parameter that determines the population size where productivity
-#'   is maximum (assumed to be 2.39 by the IWC SC).
-#' @param num_Yrs The number of projection years. Set as the last year in the
-#'   catch or abundance series, whichever is most recent, minus the
-#'   \code{start_yr}.
-#' @param start_yr The first year of the projection (assumed to be the first
-#'   year in the catch series).
-#' @param target.Pop A sample of the prior on population abundance $N$, in
-#'   numbers, set as \code{sample.N.obs} sampled from \code{priors$N.obs}
-#' @param catches The time series of catch in numbers or biomass. Currently does
-#'   not handle NAs and zeros will have to input a priori for years in which
-#'   there were no catches.
-#' @param proc_error The time series of lognormal process errors. Currently
-#' does not handle NAs or 0s
-#' @param MVP The minimum viable population size in numbers or biomass. Computed
-#'   as 3 * \code{\link{num.haplotypes}} to compute minimum viable population
-#'   (from Jackson et al., 2006 and IWC, 2007).
-#' @param tol The desired accuracy (convergence tolerance) of
-#'   \code{\link{stats::uniroot}}.
-#'
-#' @return A numeric scalar of an estimate of  carrying capacity $K$.
-#'
-#' @export
-#' @examples
-#' LOGISTIC.BISECTION.K(K.low = 1, K.high = 100000, r_max = r_max, z = z,
-#'                      num_Yrs = bisection.Yrs, start_yr = start_yr,
-#'                      target.Pop = target.Pop, catches = catches, proc_error = proc_error, MVP = MVP,
-#'                      tol = 0.001)
-LOGISTIC.BISECTION.K <- function(K.low,
-                                 K.high,
-                                 r_max,
-                                 z,
-                                 num_Yrs,
-                                 start_yr,
-                                 target.Pop,
-                                 catches,
-                                 proc_error,
-                                 MVP,
-                                 tol = 0.001) {
-    Kmin <- uniroot(TARGET.K,
-                    tol = tol,
-                    c(K.low,
-                      K.high),
-                    r_max = r_max,
-                    z = z,
-                    num_Yrs = num_Yrs,
-                    start_yr = start_yr,
-                    target.Pop = target.Pop,
-                    catches = catches,
-                    proc_error = proc_error,
-                    MVP = MVP)
-    Kmin$root
-}
-
-#' Compute analytic estimates of q, the scaling parameter between indices and
-#' absolute population size
-#'
-#' @param rel.abundance Relative abundance index
-#' @param add_CV Coefficient of variation
-#' @param Pred_N Predicted population
-#' @param start_yr Initial year
-#' @param num.IA Index of abundance
-#'
-#' @return A numeric estimator for $q$.
-#' @export
-#'
-CALC.ANALYTIC.Q <- function(rel.abundance, Pred_N, start_yr,
-                            add_CV = 0, num.IA) {
-    ## Vector to store the q values
-    analytic.Q <- rep(NA, num.IA)
-
-    for (i in 1:num.IA) {
-        ## Subseting across each index of abundance
-        IA <- rel.abundance[rel.abundance$Index == i,]
-        ## Years for which IAs are available
-        IA.yrs <- IA$Year-start_yr + 1
-        ## Numerator of the analytic q estimator (Zerbini et al., 2011 - eq. (3))
-        qNumerator <- sum((log(IA$IA.obs / Pred_N[IA.yrs])) /
-                              (IA$Sigma * IA$Sigma + add_CV * add_CV))
-        ## Denominator of the analytic q estimator (Zerbini et al., 2011 - eq. (3))
-        qDenominator <- sum(1 / (IA$Sigma * IA$Sigma + add_CV * add_CV))
-        ## Estimate of q
-        analytic.Q[i] <- exp(qNumerator / qDenominator)
-    }
-    analytic.Q
-}
-
-
-#' Compute analytic estimates of q, the scaling parameter between indices and
-#' absolute population size
-#'
-#' @param rel.abundance Relative abundance index
-#' @param rel.var.covar Variance covariance (narrow)
-#' @param rel.hess Hessian matrix of relative abundance (narrow)
-#' @param add_CV Coefficient of variation
-#' @param Pred_N Predicted population
-#' @param start_yr Initial year
-#' @param beta Density dependent catchability coefficient I = q*N^(1+beta)
-#' @param num.IA Index of abundance
-#'
-#' @return A numeric estimator for $q$.
-#' @export
-#'
-CALC.ANALYTIC.Q.MVLNORM <- function(rel.abundance, rel.var.covar, rel.hess, Pred_N, start_yr,
-                                    add_CV = 0, beta, num.IA) {
-    ## Vector to store the q values
-    analytic.Q <- rep(NA, num.IA)
-
-    for (i in 1:num.IA) {
-        ## Subseting across each index of abundance
-        IA <- rel.abundance[rel.abundance$Index == i,]
-        HESS <- rel.hess[rel.abundance$Index == i,]
-        HESS <- as.matrix(HESS[,1:nrow(HESS)])
-
-        ## Years for which IAs are available
-        IA.yrs <- IA$Year-start_yr + 1
-
-        ## Estimate of q
-        analytic.Q[i] <-  exp(sum(HESS %*% log(IA$IA.obs / (Pred_N[IA.yrs]^(1+beta[i])))) / sum(HESS))
-    }
-    analytic.Q
-}
-
-#' Compute the log-likelihood of indices of abundance assuming univariate lognormal
-#'
-#' @param rel.abundance Relative abundance
-#' @param Pred_N Predicted population size
-#' @param start_yr Initial year
-#' @param q.values Scaling parameter
-#' @param add.CV Coefficient of variation
-#' @param log Boolean, return log likelihood (default TRUE) or
-#'   likelihood.
-#'
-#' @return List of likelihood based on Zerbini et al. (2011) eq. 5 or using `dnorm`
-#' @export
-#'
-LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
-                       q.values, add.CV, log = TRUE) {
-    loglike.IA1 <- 0
-    IA.yrs <- rel.abundance$Year-start_yr + 1
-    loglike.IA1 <- -sum(
-        dlnorm( # NOTE: can be changed to dlnorm_zerb
-            x = rel.abundance$IA.obs,
-            meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
-            sdlog = rel.abundance$Sigma + add.CV,
-            log))
-
-    loglike.IA1
-}
-
-
-#' Compute the log-likelihood of indices of abundance assuming multivariate lognormal
-#'
-#' @param rel.abundance Relative abundance indices
-#' @param rel.var.covar Variance covariance matrix
-#' @param Pred_N Predicted population size
-#' @param start_yr Initial year
-#' @param q.sample.IA1 Scaling parameter
-#' @param q.sample.IA2 Scaling parameter 2
-#' @param add.CV Coefficient of variation [UNUSED]
-#' @param log Boolean, return log likelihood (default TRUE) or
-#'   likelihood.
-#'
-#' @return List of likelihood based on multivariate lognormal distribution
-#' @export
-#'
-LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
-                               q.sample.IA1, q.sample.IA2, add.CV, log = TRUE) {
-
-    loglike.IA1 <- 0
-    IA.yrs <- rel.abundance$Year-start_yr + 1 # Starts at start year
-
-    loglike.IA1 <- -sum(
-        mvtnorm::dmvnorm(
-            x = log(rel.abundance$IA.obs),
-            mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA2[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
-            sigma = rel.var.covar,
-            log))
-
-    loglike.IA1
-}
-
-
-#' Predict indices of abundance
-#'
-#' @param SIR SIR object
-#'
-#' @return List of predicted indices based on Zerbini et al. (2011) eq. 5 or using `dnorm`
-#' @export
-#'
-PREDICT.IAs <- function(rel.abundance, Pred_N, start_yr,
-                        q.values, add.CV, log = TRUE) {
-    loglike.IA1 <- 0
-    IA.yrs <- rel.abundance$Year-start_yr + 1
-    loglike.IA1 <- -sum(
-        rlnorm( # NOTE: can be changed to dlnorm_zerb
-            x = rel.abundance$IA.obs,
-            meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
-            sdlog = rel.abundance$Sigma + add.CV,
-            log))
-
-    loglike.IA1
-}
-
-#' LOG LIKELIHOOD OF ABSOLUTE ABUNDANCE
-#'
-#' This function computes two estimates of the log-likelihood of the estimated
-#' absolute abundance using the equation from Zerbini et al. 2011 (eq. 4) and a
-#' lognormal distribution from \code{\link{CALC.LNLIKE}}.
-#'
-#' @param Obs.N Observed absoluted abundance in numbers as a data.frame
-#'   containing year, estimate of absolute abundance, and standard deviation
-#' @param Pred_N Predicted absolute abundance in numbers from
-#'   \code{\link{GENERALIZED_LOGISTIC}}.
-#' @param start_yr The first year of the projection (assumed to be the first
-#'   year in the catch series).
-#' @param add_CV Additional CV to add to variance of lognormal distribution
-#'   sampled from \code{priors$add_CV}.
-#' @param log Return the log of the likelihood (TRUE/FALSE)
-#'
-#' @return A list of two numeric scalars of estimates of log-likelihood.
-#'
-#' @export
-#' @examples
-#' Obs.N  <-  data.frame(Year = 2005, Sigma = 5, Obs.N = 1000)
-#' Pred_N  <-  1234
-#' start_yr  <-  2005
-#' LNLIKE.Ns(Obs.N, Pred_N, start_yr, add_cv = 0, log=TRUE)
-LNLIKE.Ns <- function(Obs.N, Pred_N, start_yr, add_cv, log = TRUE) {
-    N.yrs <- Obs.N$Year-start_yr+1
-    nll_n <- -sum(
-        dlnorm( # NOTE: can be changed to dlnorm_zerb
-            x = Obs.N$N.obs,
-            meanlog = log( Pred_N[N.yrs] ),
-            sdlog = Obs.N$Sigma + add_cv,
-            log))  ## Years for which Ns are available
-    nll_n
-}
-
-#' Calculate the log-likelihood of the growth rate
-#'
-#' Calculates the log-likelihood of the estimated growth rate given the observed
-#' growth rate and the standard deviation of the observed growth rate.
-#'
-#' @param Obs.GR Observed growth rate
-#' @param Pred.GR Predicted growth rate
-#' @param GR.SD.Obs Standard error of the observed growth rate
-#'
-#' @return A \code{list} containing \code{loglike.GR1} and \code{loglike.GR2}
-#' @export
-#' @examples
-#' LNLIKE.GR(0.1, 0.1, 0.1)
-LNLIKE.GR <- function(Obs.GR, Pred.GR, GR.SD.Obs, log = T) {
-    ## This can be converted the likelihood from Zerbini et al. 2011 (eq. 6)
-    -sum( dnorm( x = Obs.GR , mean = Pred.GR , sd = GR.SD.Obs, log = log ) )
-}
-
-#' Calculate the log-likelihood of the beach whale data
-#'
-#' @param beached_data Data on whale strandingsas a data.frame
-#'   containing year, estimate of absolute abundance, and standard deviation
-#' @param Pred_N Predicted absolute abundance in numbers from
-#'   \code{\link{GENERALIZED_LOGISTIC}}.
-#' @param start_yr The first year of the projection (assumed to be the first
-#'   year in the catch series).
-#' @param add_CV Additional CV to add to variance of lognormal distribution
-#'   sampled from \code{priors$add_CV}.
-#' @param q_anthro is the proportion of the population that will be killed each year from anthropogenic mortality
-#' @param d_anthro is the detection probability of carcasses on the beach (including the probability of washing up on shore)
-#' @param p_anthro is the proportion of the range of the species covered by monitoring
-#' @param log Return the log of the likelihood (TRUE/FALSE)
-#'
-#' @export
-#' @return the negative log-likelihood
-LNLIKE.BEACHED <- function(beached_data,
-                           Pred_N,
-                           start_yr,
-                           q_anthro,
-                           d_anthro,
-                           p_anthro,
-                           log=TRUE){
-
-    N.yrs <- beached_data$Year-start_yr+1
-    nll_n <- -sum(
-        dpois( # NOTE: can be changed to dlnorm_zerb
-            x = beached_data$N.obs,
-            lambda = q_anthro * d_anthro * p_anthro * Pred_N[N.yrs],
-            log))  ## Years for which Ns are available
-    nll_n
-}
-
-#' Function to calculate the log-likelihood using a lognormal distribution
-#'
-#' @param Obs.N Time series of observed abundance
-#' @param Pred_N Time series of estimated abundance
-#' @param CV coefficient of variation
-#' @param log whether to export as log-likelihood
-#'
-#' @return returns a scalar of the likelihood
-#' @export
-#' @examples
-#' Obs.N <- 2000
-#' Pred_N <- 2340
-#' CV <- 4
-#' CALC.LNLIKE(Obs.N, Pred_N, CV)
-CALC.LNLIKE <- function(Obs.N, Pred_N, CV, log = FALSE) {
-    sum(dnorm(x = log(Obs.N), mean = log(Pred_N), sd = CV, log = log))
-}
-
-#' OUTPUT FUNCTION
-#'
-#' Function that provides a summary of SIR outputs including: mean, median, 95%
-#' credible interval, 90% predicitive interval, max, and sample size.
-#'
-#' @param x A data.frame of mcmc samples.
-#' @param object Name of the model object as specified by the user.
-#' @param file_name name of a file to identified the files exported by the
-#'   function. If NULL, will not save .csv file.
-#'
-#' @return Returns a data.frame with summary of SIR outputs
-#' @export
-#' @examples
-#' x  <-  rnorm(1000, 5, 7)
-#' y  <-  rnorm(1000, 6, 9)
-#' df <- data.frame(x = x, y = y)
-#' summary_sir( df , object = "example_summary")
-summary_sir <- function(x, object = "USERDEFINED", file_name = "NULL") {
-
-    # Change name if not supplied
-    if(object == "USERDEFINED"){
-        if(TRUE %in% grepl(pattern = "N_", names(x), ignore.case = FALSE)){object == "trajectory_summary"}
-        if(TRUE %in% grepl(pattern = "r_max", names(x), ignore.case = FALSE)){object == "parameter_summary"}
-    }
-
-    row_names <- c("mean", "median",
-                   "2.5%PI", "97.5%PI",
-                   "5%PI", "95%PI",
-                   "min", "max", "n")
-
-    output_summary <- matrix(nrow = length(row_names), ncol = dim(x)[2])
-    output_summary[1, ] <- sapply(x, mean)
-    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5, 0.025, 0.975, 0.05, 0.95))
-    output_summary[7, ] <- sapply(x, min)
-    output_summary[8, ] <- sapply(x, max)
-    output_summary[9, ] <- sapply(x, length)
-
-    output_summary <- data.frame(output_summary)
-    names(output_summary) <- names(x)
-    row.names(output_summary) <- row_names
-    noquote(format(output_summary, digits = 3, scientific = FALSE))
-
-    if(!is.null(file_name)){
-        write.csv(output_summary,
-                  paste0(file_name, "_", object, ".csv"))
-    }
-
-    list(object = object, date=Sys.time(), output_summary = output_summary)
 }

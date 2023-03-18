@@ -7,6 +7,7 @@ likelihoods and the output functions}
 \usage{
 StateSpaceSIR(
   file_name = "NULL",
+  allee_model = 0,
   n_resamples = 1000,
   priors = make_prior_list(),
   catch_multipliers = make_multiplier_list(),
@@ -19,6 +20,7 @@ StateSpaceSIR(
   rel.abundance.key = TRUE,
   count.data = NULL,
   count.data.key = FALSE,
+  min_rmax = 0.118,
   growth.rate.obs = c(0.074, 0.033, TRUE),
   growth.rate.Yrs = c(1995, 1996, 1997, 1998),
   catch.data = Catch.data,
@@ -28,7 +30,9 @@ StateSpaceSIR(
 }
 \arguments{
 \item{file_name}{name of a file to identified the files exported by the
-function}
+function#'}
+
+\item{allee_model}{Switch to determine the depensation model. 0 = no Allee effect; 1 = Hilborn et al 2014 P50 Allee Effect; 2 = Logistic Allee effect; 3 = Lin and Li 2002; 4 = Haider et al 2017. The depensation parameter is defined by \code{P50} using \link{make_prior_list}.}
 
 \item{n_resamples}{number of resamples to compute the marginal posterior
 distributions}
@@ -66,6 +70,8 @@ NOT USED}
 \item{count.data.key}{key to speficy in count data are used. Default is
 FALSE. NOT USED}
 
+\item{min_rmax}{Upper bound on rmax sampling (default to 0.118)}
+
 \item{growth.rate.obs}{observed growth rate (1st element) and standard error
 (2nd element) as in Zerbni et al. (2011). If third element is FALSE, the
 growth rate is not included in the likelihood}
@@ -94,6 +100,7 @@ make_prior_list(r_max = make_prior(runif, 0, 0.118),
                 catch_sample = make_prior(runif, 0, 1),
                 z = make_prior(2.39),
                 Pmsy = make_prior(use = FALSE),
+                P50 = make_prior(0),
                 q_IA1 = make_prior(use = FALSE),
                 q_IA2 = make_prior(0),
                 q_count = make_prior(use = FALSE)
@@ -108,6 +115,7 @@ likelihoods and the output functions
 
 \dontrun{
 StateSpaceSIR(file_name = "test.N2005",
+             allee_model = 0,
              n_resamples = 100,
              priors = make_prior_list(),
              catch_multipliers = make_multiplier_list(),

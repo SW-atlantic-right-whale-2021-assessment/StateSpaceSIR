@@ -515,8 +515,17 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
     num.IA <- sort(unique(c( sapply(SIR, function(x) x$inputs$rel.abundance$Index))))
     years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
                             sapply(SIR, function(x) x$inputs$output.Years))))
-    vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA), "add_VAR_IA")
-    vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", num.IA, "}$"), paste0("$\beta_{q_{flt", num.IA,"}}$"), "$sigma_q$")
+
+    if(SIR[[1]]$inputs$allee_model == 0){
+        vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA), "add_VAR_IA")
+
+        vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", num.IA, "}$"), paste0("$\beta_{q_{flt", num.IA,"}}$"), "$sigma_q$")
+    }else{
+
+        vars <- c("r_max", "K", "Pmsy", "P50", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA), "add_VAR_IA")
+
+        vars_latex <- c("$r_{max}$", "$K$", "$P_{MSY}$", "$P_{50}$", "$N_{min}$", "$sigma^2$", paste0("$N_{", years, "}$"), "Max depletion", paste0("Depletion in ", years), paste0("$q_{flt", num.IA, "}$"), paste0("$\beta_{q_{flt", num.IA,"}}$"), "$sigma_q$")
+    }
 
 
     # Only select vars that have multiple unique parameters

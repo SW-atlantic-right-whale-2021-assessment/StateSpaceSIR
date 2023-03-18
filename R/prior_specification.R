@@ -102,6 +102,7 @@ rlunif <- function(n, min = 1, max = 2) {
 ##' @param Pmsy Parameter that determines the level of depletion at MSY.
 ##' Both z and Pmsy are confounded and only one can be used.
 ##'  If \code{use = FALSE}, z is used.
+##' @param P50 Parameter that determines the level of depensation.
 ##' @param q_IA1 Defaults to unused. Prior on intercept for q for indices of abundance. If
 ##'   \code{use = FALSE}, an analytic solution for q is used.
 ##' @param q_IA1 Defaults to unused. Prior on annual slope for q for indices of abundance. If
@@ -119,6 +120,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
                             catch_sample = make_prior(runif, 0, 1),
                             z = make_prior(2.39),
                             Pmsy = make_prior(use = FALSE),
+                            P50 = make_prior(0),
                             q_IA1 = make_prior(use = FALSE),
                             q_IA2 = make_prior(0),
                             q_count = make_prior(use = FALSE)) {
@@ -131,6 +133,7 @@ make_prior_list <- function(r_max = make_prior(runif, 0, 0.118),
          catch_sample = catch_sample,
          z = z,
          Pmsy = Pmsy,
+         P50 = P50,
          q_IA1 = q_IA1,
          q_IA2 = q_IA2,
          q_count = q_count)
