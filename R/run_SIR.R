@@ -349,21 +349,28 @@ StateSpaceSIR <- function(file_name = "NULL",
         if(allee_model == 3){ # Lin and Li 2002
             if (priors$z$use) {
                 sample.z <- priors$z$rfn()
-                sample.Pmsy <- uniroot(pmsy_z_linli,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+                sample.Pmsy <- uniroot(pmsy_z_linli,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.4, upper=1)$root
             } else {
-                sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
-
+                # Re-sample Pmsy until reasonable solution, given depensation parameter
+                sample.z <- try(uniroot(pmsy_z_linli, Pmsy = .5, q = .2, r = .2, k - 100, lower= .4,upper=1)$root, silent = TRUE)
+                while (class(sample.z) == "try-error") {
+                    sample.Pmsy <- priors$Pmsy$rfn()
+                    sample.z <- try(uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
+                }
             }
         }
 
         if(allee_model == 4){ # Haider et al 2017
             if (priors$z$use) {
                 sample.z <- priors$z$rfn()
-                sample.Pmsy <- uniroot(pmsy_z_haider,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+                sample.Pmsy <- uniroot(pmsy_z_haider,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.4, upper=1)$root
             } else {
-                sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
+                # Re-sample Pmsy until reasonable solution, given depensation parameter
+                sample.z <- try(uniroot(pmsy_z_haider, Pmsy = .5, q = .2, r = .2, k - 100, lower= .4,upper=1)$root, silent = TRUE)
+                while (class(sample.z) == "try-error") {
+                    sample.Pmsy <- priors$Pmsy$rfn()
+                    sample.z <- try(uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
+                }
 
             }
         }

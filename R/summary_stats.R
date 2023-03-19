@@ -71,7 +71,7 @@ summary_table <- function( SIR, file_name = NULL){
 
 
   pop_vars <- c("K", "Nmin", paste0("N", years))
-  depletion_vars <- c("Max_Dep", paste0("status", years), paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
+  depletion_vars <- c("Max_Dep", paste0("status", years),"P50","sigma", paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
 
   results <- data.frame(matrix(NA, nrow = length(vars), ncol = 8))
   colnames(results) <- c("Parameter","Mean", "Median", "2.5% CI", "25% CI", "75% CI", "97.5% CI", "Unique")
@@ -152,7 +152,6 @@ summary_table <- function( SIR, file_name = NULL){
 
   # Format things
   results[c(1,3:4),2:7] <- round(results[c(1,3:4),2:7], 3)
-  results[5,2:7] <- round(results[5,2:7], 4)
   results[which(vars %in% depletion_vars),2:7] <- round(results[which(vars %in% depletion_vars),2:7], 3)
   results[which(vars %in% pop_vars),2:7] <- format(round(results[which(vars %in% pop_vars),2:7], 0),big.mark=",",scientific=FALSE)
   results[,8] <- format(round(results[,8], 0),big.mark=",",scientific=FALSE)
