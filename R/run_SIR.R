@@ -327,10 +327,15 @@ StateSpaceSIR <- function(file_name = "NULL",
         if(allee_model == 1){ # Hilborn et al 2014
             if (priors$z$use) {
                 sample.z <- priors$z$rfn()
-                sample.Pmsy <- uniroot(pmsy_z_hilborn,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+                sample.Pmsy <- uniroot(pmsy_z_hilborn,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.3, upper=1)$root
             } else {
-                sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
+
+                # Re-sample Pmsy until reasonable solution, given depensation parameter
+                sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=.4, k = 100, r = .2, q = .2, lower= 0.000001,upper=100)$root, silent = TRUE)
+                while (class(sample.z) == "try-error") {
+                    sample.Pmsy <- priors$Pmsy$rfn()
+                    sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
+                }
 
             }
         }
@@ -338,11 +343,14 @@ StateSpaceSIR <- function(file_name = "NULL",
         if(allee_model == 2){ # Logistic
             if (priors$z$use) {
                 sample.z <- priors$z$rfn()
-                sample.Pmsy <- uniroot(pmsy_z_logistic,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0, upper=1)$root
+                sample.Pmsy <- uniroot(pmsy_z_logistic,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.3, upper=1)$root
             } else {
-                sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root
-
+                # Re-sample Pmsy until reasonable solution, given depensation parameter
+                sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=.4, k = 100, r = .2, q = .2, lower= 0.000001,upper=100)$root, silent = TRUE)
+                while (class(sample.z) == "try-error") {
+                    sample.Pmsy <- priors$Pmsy$rfn()
+                    sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
+                }
             }
         }
 
