@@ -193,6 +193,25 @@ bayes_factor <- function( SIR , prior_probs = NULL){
 
 
 
+#' Calculate WAIC
+#'
+#' @param SIR SIR Fit model or list of SIR fit models
+#'
+#' @return vector of WAIC
+waic <- function( SIR ){
+    # If it is a single SIR, make into a list
+    if(class(SIR) == "SIR"){
+        stop("Error: only one SIR model provided")
+    }
+
+
+    # Get average likelihoods
+    waic <- sapply(SIR, function(x) -2*log(mean(x$resamples_output$Likelihood)) + 2 * var(log(x$resamples_output$Likelihood)))
+    return(waic)
+}
+
+
+
 
 #' Weighted SIR model
 #'

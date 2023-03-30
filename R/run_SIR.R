@@ -249,7 +249,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                    paste0("q_IA2", unique(rel.abundance$Index)),
                    paste0("ROI_Count", unique(count.data$Index)),
                    paste0("q_Count", unique(count.data$Index)),
-                   "NLL.IAs", "NLL.Count", "NLL.N", "NLL.GR", "NLL", "Likelihood",
+                   paste0("NLL.IAs", 1:nrow(rel.abundance)), paste0("NLL.Count", 1:nrow(count.data)), paste0("NLL.N", 1:nrow(abs.abundance)), "NLL.GR", "NLL", "Likelihood",
                    "Max_Dep",paste0("status", target.Yr), paste("status", output.Yrs, sep = ""), "draw", "save")
 
     proc_error_save <- matrix(NA, nrow = n_resamples, ncol = projection.Yrs-1)
@@ -525,7 +525,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                              sample.add_VAR_IA,
                                              TRUE)
         } else {
-            lnlike.IAs <- 0
+            lnlike.IAs <- rep(0, nrow(rel.abundance))
         }
 
         # (2) count data (if count.data.key is TRUE)
@@ -537,7 +537,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                        sample.add_CV,
                                        log=TRUE)
         } else {
-            lnlike.Count <- 0
+            lnlike.Count <- rep(0, nrow(count.data))
         }
 
         # (3) absolute abundance
@@ -548,7 +548,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                                    sample.add_CV,
                                    log=TRUE)
         } else {
-            lnlike.Ns <- 0
+            lnlike.Ns <- rep(0, nrow(abs.abundance))
         }
 
         # (4) growth rate if applicable
@@ -571,7 +571,7 @@ StateSpaceSIR <- function(file_name = "NULL",
         }
 
         ## These use the likelihoods in Zerbini et al. (2011)
-        NLL <- lnlike.IAs[[1]] + lnlike.Count[[1]] + lnlike.Ns[[1]] + lnlike.GR[[1]]
+        NLL <- -sum(lnlike.IAs + lnlike.Count + lnlike.Ns + lnlike.GR)
         Likelihood <- exp(-NLL)
         if (control$verbose > 1) {
             message("NLL = ", NLL,
@@ -647,10 +647,10 @@ StateSpaceSIR <- function(file_name = "NULL",
                                             q.sample.IA2,
                                             Pred.ROI.Count,
                                             q.sample.Count,
-                                            lnlike.IAs[[1]],
-                                            lnlike.Count[[1]],
-                                            lnlike.Ns[[1]],
-                                            lnlike.GR[[1]],
+                                            lnlike.IAs,
+                                            lnlike.Count,
+                                            lnlike.Ns,
+                                            lnlike.GR,
                                             NLL,
                                             Likelihood,
                                             Pred_N$Min_Pop / sample.K,

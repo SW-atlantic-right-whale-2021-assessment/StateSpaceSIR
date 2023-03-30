@@ -84,7 +84,7 @@ LNLIKE.IAs <- function(rel.abundance, Pred_N, start_yr,
                        q.values, add.CV, log = TRUE) {
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1
-    loglike.IA1 <- -sum(
+    loglike.IA1 <- (
         dlnorm( # NOTE: can be changed to dlnorm_zerb
             x = rel.abundance$IA.obs,
             meanlog = log( q.values[rel.abundance$Index] * Pred_N[IA.yrs] ),
@@ -116,7 +116,7 @@ LNLIKE.MVLNORM.IAs <- function(rel.abundance, rel.var.covar, Pred_N, start_yr,
     loglike.IA1 <- 0
     IA.yrs <- rel.abundance$Year-start_yr + 1 # Starts at start year
 
-    loglike.IA1 <- -sum(
+    loglike.IA1 <- (
         mvtnorm::dmvnorm(
             x = log(rel.abundance$IA.obs),
             mean = log( q.sample.IA1[rel.abundance$Index] * (Pred_N[IA.yrs] ^ (1 +  q.sample.IA2[rel.abundance$Index])) ) - 0.5 * diag(rel.var.covar), # Lognormal bias correction
@@ -174,7 +174,7 @@ PREDICT.IAs <- function(rel.abundance, Pred_N, start_yr,
 #' LNLIKE.Ns(Obs.N, Pred_N, start_yr, add_cv = 0, log=TRUE)
 LNLIKE.Ns <- function(Obs.N, Pred_N, start_yr, add_cv, log = TRUE) {
     N.yrs <- Obs.N$Year-start_yr+1
-    nll_n <- -sum(
+    nll_n <- (
         dlnorm( # NOTE: can be changed to dlnorm_zerb
             x = Obs.N$N.obs,
             meanlog = log( Pred_N[N.yrs] ),
@@ -198,7 +198,7 @@ LNLIKE.Ns <- function(Obs.N, Pred_N, start_yr, add_cv, log = TRUE) {
 #' LNLIKE.GR(0.1, 0.1, 0.1)
 LNLIKE.GR <- function(Obs.GR, Pred.GR, GR.SD.Obs, log = T) {
     ## This can be converted the likelihood from Zerbini et al. 2011 (eq. 6)
-    -sum( dnorm( x = Obs.GR , mean = Pred.GR , sd = GR.SD.Obs, log = log ) )
+    ( dnorm( x = Obs.GR , mean = Pred.GR , sd = GR.SD.Obs, log = log ) )
 }
 
 #' Calculate the log-likelihood of the beach whale data
@@ -227,7 +227,7 @@ LNLIKE.BEACHED <- function(beached_data,
                            log=TRUE){
 
     N.yrs <- beached_data$Year-start_yr+1
-    nll_n <- -sum(
+    nll_n <- (
         dpois( # NOTE: can be changed to dlnorm_zerb
             x = beached_data$N.obs,
             lambda = q_anthro * d_anthro * p_anthro * Pred_N[N.yrs],
@@ -250,5 +250,5 @@ LNLIKE.BEACHED <- function(beached_data,
 #' CV <- 4
 #' CALC.LNLIKE(Obs.N, Pred_N, CV)
 CALC.LNLIKE <- function(Obs.N, Pred_N, CV, log = FALSE) {
-    sum(dnorm(x = log(Obs.N), mean = log(Pred_N), sd = CV, log = log))
+    (dnorm(x = log(Obs.N), mean = log(Pred_N), sd = CV, log = log))
 }
