@@ -111,8 +111,36 @@ StateSpaceSIR <- function(file_name = "NULL",
                           realized_prior = FALSE,
                           seed = 666,
                           control = sir_control()) {
+
+
+    # ###############################
+    # # For debugging
+    # ###############################
+    # file_name = "NULL"
+    # allee_model = 0
+    # n_resamples = 1000
+    # priors = make_prior_list()
+    # catch_multipliers = make_multiplier_list()
+    # target.Yr = 2008
+    # num.haplotypes = 66
+    # output.Yrs = c(2008)
+    # abs.abundance = Abs.Abundance
+    # abs.abundance.key = TRUE
+    # rel.abundance = Rel.Abundance
+    # rel.abundance.key = TRUE
+    # count.data = NULL
+    # count.data.key = FALSE
+    # min_rmax = 0.118
+    # growth.rate.obs = c(0.074, 0.033, TRUE)
+    # growth.rate.Yrs = c(1995, 1996, 1997, 1998)
+    # catch.data = Catch.data
+    # realized_prior = FALSE
+    # seed = 666
+    # control = sir_control()
+
     begin.time <- Sys.time()
-    set.seed(666)
+    set.seed(seed)
+
 
     ################################
     # Assigning variables
@@ -249,7 +277,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                    paste0("q_IA2", unique(rel.abundance$Index)),
                    paste0("ROI_Count", unique(count.data$Index)),
                    paste0("q_Count", unique(count.data$Index)),
-                   paste0("NLL.IAs", 1:nrow(rel.abundance)), paste0("NLL.Count", 1:nrow(count.data)), paste0("NLL.N", 1:nrow(abs.abundance)), "NLL.GR", "NLL", "Likelihood",
+                   paste0("NLL.IAs", unique(rel.abundance$Index)), paste0("NLL.Count", 1:nrow(count.data)), paste0("NLL.N", 1:nrow(abs.abundance)), "NLL.GR", "NLL", "Likelihood",
                    "Max_Dep",paste0("status", target.Yr), paste("status", output.Yrs, sep = ""), "draw", "save")
 
     proc_error_save <- matrix(NA, nrow = n_resamples, ncol = projection.Yrs-1)
@@ -329,14 +357,8 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.z <- priors$z$rfn()
                 sample.Pmsy <- uniroot(pmsy_z_hilborn,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.3, upper=1)$root
             } else {
-
-                # Re-sample Pmsy until reasonable solution, given depensation parameter
-                sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=.4, k = 100, r = .2, q = .2, lower= 0.000001,upper=100)$root, silent = TRUE)
-                while (class(sample.z) == "try-error") {
-                    sample.Pmsy <- priors$Pmsy$rfn()
-                    sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
-                }
-
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -345,12 +367,8 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.z <- priors$z$rfn()
                 sample.Pmsy <- uniroot(pmsy_z_logistic,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.3, upper=1)$root
             } else {
-                # Re-sample Pmsy until reasonable solution, given depensation parameter
-                sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=.4, k = 100, r = .2, q = .2, lower= 0.000001,upper=100)$root, silent = TRUE)
-                while (class(sample.z) == "try-error") {
-                    sample.Pmsy <- priors$Pmsy$rfn()
-                    sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
-                }
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -359,12 +377,8 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.z <- priors$z$rfn()
                 sample.Pmsy <- uniroot(pmsy_z_linli,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.4, upper=1)$root
             } else {
-                # Re-sample Pmsy until reasonable solution, given depensation parameter
-                sample.z <- try(uniroot(pmsy_z_linli, Pmsy = .5, q = .2, r = .2, k - 100, lower= .4,upper=1)$root, silent = TRUE)
-                while (class(sample.z) == "try-error") {
-                    sample.Pmsy <- priors$Pmsy$rfn()
-                    sample.z <- try(uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
-                }
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- try(uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= -1,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -373,18 +387,20 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.z <- priors$z$rfn()
                 sample.Pmsy <- uniroot(pmsy_z_haider,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.4, upper=1)$root
             } else {
-                # Re-sample Pmsy until reasonable solution, given depensation parameter
-                sample.z <- try(uniroot(pmsy_z_haider, Pmsy = .5, q = .2, r = .2, k - 100, lower= .4,upper=1)$root, silent = TRUE)
-                while (class(sample.z) == "try-error") {
-                    sample.Pmsy <- priors$Pmsy$rfn()
-                    sample.z <- try(uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
-                }
-
+                sample.Pmsy <- priors$Pmsy$rfn()
+                sample.z <- try(uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= -1,upper=100)$root, silent = TRUE)
             }
         }
 
-        ## Sampling from q priors if q.prior is TRUE; priors on q for indices of
-        ## abundance
+
+        ## If z is not solvable, give error and set likelihood to 0
+        K.error = FALSE
+        if(class(sample.z) == "try-error"){
+            sample.z = 1
+            K.error = TRUE
+        }
+
+        ## Sampling from q priors if q.prior is TRUE; priors on q for indices of abundance
         q.error = FALSE
         if (priors$q_IA1$use) {
             q.sample.IA1 <- replicate(num.IA, priors$q_IA1$rfn())
@@ -428,9 +444,6 @@ StateSpaceSIR <- function(file_name = "NULL",
         if(class(sample.K) == "try-error"){
             sample.K = 999
             K.error = TRUE
-        } else{
-            sample.K = sample.K
-            K.error = FALSE
         }
 
         #Computing the predicted abundances with the samples from the priors
@@ -490,7 +503,6 @@ StateSpaceSIR <- function(file_name = "NULL",
 
 
         ## Calculate Analytical Qs if count.data.key is TRUE
-        ## (NOT USED YET - AZerbini, Feb 2013)
         if (count.data.key) {
             if (!priors$q_count$use) {
                 q.sample.Count <- CALC.ANALYTIC.Q(count.data,
@@ -504,12 +516,12 @@ StateSpaceSIR <- function(file_name = "NULL",
         }
 
         if (control$verbose > 3) {
-            message("r_max = ", sample.r_max,
-                    " N.obs = ", sample.N.obs,
-                    " K = ", sample.K,
-                    " Pred_N.target = ", Pred_N$Pred_N[bisection.Yrs],
-                    " q.IAs = ", q.sample.IA1,
-                    " q.Count = ", q.sample.Count)
+            message("r_max = ", round(sample.r_max,4),
+                    " N.obs = ", round(sample.N.obs),
+                    " K = ", round(sample.K),
+                    " Pred_N.target = ", round(Pred_N$Pred_N[bisection.Yrs]),
+                    " q.IAs = ", round(q.sample.IA1,4),
+                    " q.Count = ", round(q.sample.Count,4))
         }
 
         #Compute the likelihoods
@@ -564,14 +576,14 @@ StateSpaceSIR <- function(file_name = "NULL",
         }
 
         if (control$verbose > 2) {
-            message("lnlike.IAs = ", lnlike.IAs,
-                    " lnlike.Count = ", lnlike.Count,
-                    " lnlike.Ns = ", lnlike.Ns,
-                    " lnlike.GR = ", lnlike.GR)
+            message("lnlike.IAs = ", round(lnlike.IAs,3),
+                    " lnlike.Count = ", round(lnlike.Count,3),
+                    " lnlike.Ns = ", round(lnlike.Ns,3),
+                    " lnlike.GR = ", round(lnlike.GR,3))
         }
 
         ## These use the likelihoods in Zerbini et al. (2011)
-        NLL <- -sum(lnlike.IAs + lnlike.Count + lnlike.Ns + lnlike.GR)
+        NLL <- -sum(c(lnlike.IAs, lnlike.Count, lnlike.Ns, lnlike.GR))
         Likelihood <- exp(-NLL)
         if (control$verbose > 1) {
             message("NLL = ", NLL,
@@ -745,10 +757,10 @@ StateSpaceSIR <- function(file_name = "NULL",
                                       tolerance = control$K_bisect_tol,
                                       output.Years = output.Yrs,
                                       abs.abundance = abs.abundance,
+                                      count.data = count.data,
                                       catch.data = catch.data,
                                       realized_prior = realized_prior))
     if(rel.abundance.key){ return_list$inputs$rel.abundance = rel.abundance}
-    if(count.data.key){ return_list$inputs$count.data = count.data}
 
     class(return_list) <- "SIR" # Defines class for object
 

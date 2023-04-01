@@ -204,13 +204,15 @@ waic <- function( SIR ){
         stop("Error: only one SIR model provided")
     }
 
+    # Get WAIC
+    waic <- c()
+    for(i in 1:length(SIR)){
+        nll_cols <- c(paste0("NLL.IAs", unique(SIR[[i]]$inputs$rel.abundance$Index)), paste0("NLL.N", 1:nrow(SIR[[i]]$inputs$abs.abundance)), "NLL.GR") # add paste0("NLL.Count", 1:nrow(SIR[[i]]$inputs$count.data))
+        waic[i] <- -2*sum(log(colMeans(exp(SIR[[i]]$resamples_output[,nll_cols])))) + 2*sum(apply(SIR[[i]]$resamples_output[,nll_cols], 2, var))
+    }
 
-    # Get average likelihoods
-    waic <- sapply(SIR, function(x) -2*log(mean(x$resamples_output$Likelihood)) + 2 * var(log(x$resamples_output$Likelihood)))
     return(waic)
 }
-
-
 
 
 #' Weighted SIR model
