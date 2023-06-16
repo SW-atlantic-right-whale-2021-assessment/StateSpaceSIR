@@ -149,8 +149,10 @@ StateSpaceSIR <- function(file_name = "NULL",
     ## Use the first year of the projection is set as the first year in the
     ## catch series
     start_yr <- min(catch.data[[1]]$Year, na.rm = TRUE)
-    for(i in 2:length(catch.data)){
-        start_yr <- min(c(start_yr, catch.data[[i]]$Year), na.rm = TRUE)
+    if(length(catch.data) > 1){
+        for(i in 2:length(catch.data)){
+            start_yr <- min(c(start_yr, catch.data[[i]]$Year), na.rm = TRUE)
+        }
     }
 
     ## The last year of the projection is set as the last year in the catch or
@@ -358,7 +360,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.Pmsy <- uniroot(pmsy_z_hilborn,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.3, upper=1)$root
             } else {
                 sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
+                sample.z <- try(uniroot(pmsy_z_hilborn,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 1e-8,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -368,7 +370,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.Pmsy <- uniroot(pmsy_z_logistic,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.3, upper=1)$root
             } else {
                 sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 0.000001,upper=100)$root, silent = TRUE)
+                sample.z <- try(uniroot(pmsy_z_logistic,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 1e-8,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -378,7 +380,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.Pmsy <- uniroot(pmsy_z_linli,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.4, upper=1)$root
             } else {
                 sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- try(uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= -1,upper=100)$root, silent = TRUE)
+                sample.z <- try(uniroot(pmsy_z_linli,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 1e-8,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -388,7 +390,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                 sample.Pmsy <- uniroot(pmsy_z_haider,z=sample.z, k = 100, r = sample.r_max, q = sample.P50, lower=0.4, upper=1)$root
             } else {
                 sample.Pmsy <- priors$Pmsy$rfn()
-                sample.z <- try(uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= -1,upper=100)$root, silent = TRUE)
+                sample.z <- try(uniroot(pmsy_z_haider,Pmsy=sample.Pmsy, k = 100, r = sample.r_max, q = sample.P50, lower= 1e-8,upper=100)$root, silent = TRUE)
             }
         }
 
@@ -615,67 +617,66 @@ StateSpaceSIR <- function(file_name = "NULL",
             }
         }
 
+        ## Accumulate likelihood
         Cumulative.Likelihood <- Cumulative.Likelihood + Likelihood
 
-        # Trick to just extract realized prior
-        if(realized_prior){
+        ## Trick to just extract realized prior
+        if(realized_prior & !q.error & !K.error & !Pred_N$Violate_Min_Viable_Pop){
             Cumulative.Likelihood <- 2 * control$threshold
         }
 
-        if (!Pred_N$Violate_Min_Viable_Pop) {
-
-            while (Cumulative.Likelihood > control$threshold & i < n_resamples) {
-                if (control$verbose > 0) {
-                    message("sample = ", i, " draw = ", draw)
-                }
-                if (control$verbose > 1) {
-                    message("draw = ", draw,
-                            " Likelihood = ", Likelihood,
-                            " Cumulative = ", Cumulative.Likelihood)
-                }
-                save <- TRUE
-                Cumulative.Likelihood <- Cumulative.Likelihood-control$threshold
-                resamples_trajectories[i+1,] <- Pred_N$Pred_N
-                catch_trajectories[i+1,] <- catches
-                proc_error_save[i+1,] <- sample.proc.error
-                resamples_output[i+1,] <- c(sample.r_max,
-                                            sample.K,
-                                            sample.var_N,
-                                            sample.z,
-                                            sample.Pmsy,
-                                            sample.P50,
-                                            sample.catch_multipliers,
-                                            sample.catch_parameter,
-                                            sample.N.obs,
-                                            sample.add_CV,
-                                            sample.add_VAR_IA,
-                                            Pred_N$Min_Pop,
-                                            ifelse(length(Pred_N$Min_Yr) == 1, Pred_N$Min_Yr, "Multiple"),
-                                            Pred_N$Violate_Min_Viable_Pop,
-                                            c(Pred_N$Pred_N[target.Yr - start_yr + 1]),
-                                            c(Pred_N$Pred_N[output.Yrs - start_yr + 1]),
-                                            Pred.ROI.IA,
-                                            q.sample.IA1,
-                                            q.sample.IA2,
-                                            Pred.ROI.Count,
-                                            q.sample.Count,
-                                            lnlike.IAs,
-                                            lnlike.Count,
-                                            lnlike.Ns,
-                                            lnlike.GR,
-                                            NLL,
-                                            Likelihood,
-                                            Pred_N$Min_Pop / sample.K,
-                                            c(Pred_N$Pred_N[target.Yr - start_yr + 1] /
-                                                  sample.K),
-                                            c(Pred_N$Pred_N[output.Yrs - start_yr + 1] /
-                                                  sample.K),
-                                            draw,
-                                            save)
-                i <- i+1
-                if (control$progress_bar) {
-                    setTxtProgressBar(pb, i)
-                }
+        ## Save draws if cumulative like is above threshold
+        while (Cumulative.Likelihood > control$threshold & i < n_resamples) {
+            if (control$verbose > 0) {
+                message("sample = ", i, " draw = ", draw)
+            }
+            if (control$verbose > 1) {
+                message("draw = ", draw,
+                        " Likelihood = ", Likelihood,
+                        " Cumulative = ", Cumulative.Likelihood)
+            }
+            save <- TRUE
+            Cumulative.Likelihood <- Cumulative.Likelihood-control$threshold
+            resamples_trajectories[i+1,] <- Pred_N$Pred_N
+            catch_trajectories[i+1,] <- catches
+            proc_error_save[i+1,] <- sample.proc.error
+            resamples_output[i+1,] <- c(sample.r_max,
+                                        sample.K,
+                                        sample.var_N,
+                                        sample.z,
+                                        sample.Pmsy,
+                                        sample.P50,
+                                        sample.catch_multipliers,
+                                        sample.catch_parameter,
+                                        sample.N.obs,
+                                        sample.add_CV,
+                                        sample.add_VAR_IA,
+                                        Pred_N$Min_Pop,
+                                        ifelse(length(Pred_N$Min_Yr) == 1, Pred_N$Min_Yr, "Multiple"),
+                                        Pred_N$Violate_Min_Viable_Pop,
+                                        c(Pred_N$Pred_N[target.Yr - start_yr + 1]),
+                                        c(Pred_N$Pred_N[output.Yrs - start_yr + 1]),
+                                        Pred.ROI.IA,
+                                        q.sample.IA1,
+                                        q.sample.IA2,
+                                        Pred.ROI.Count,
+                                        q.sample.Count,
+                                        lnlike.IAs,
+                                        lnlike.Count,
+                                        lnlike.Ns,
+                                        lnlike.GR,
+                                        NLL,
+                                        Likelihood,
+                                        Pred_N$Min_Pop / sample.K,
+                                        c(Pred_N$Pred_N[target.Yr - start_yr + 1] /
+                                              sample.K),
+                                        c(Pred_N$Pred_N[output.Yrs - start_yr + 1] /
+                                              sample.K),
+                                        draw,
+                                        save)
+            i <- i+1
+            if (control$progress_bar) {
+                setTxtProgressBar(pb, i)
             }
         }
         draw <- draw+1
