@@ -279,7 +279,7 @@ StateSpaceSIR <- function(file_name = "NULL",
                    paste0("q_IA2", unique(rel.abundance$Index)),
                    paste0("ROI_Count", unique(count.data$Index)),
                    paste0("q_Count", unique(count.data$Index)),
-                   paste0("NLL.IAs", unique(rel.abundance$Index)), paste0("NLL.Count", 1:nrow(count.data)), paste0("NLL.N", 1:nrow(abs.abundance)), "NLL.GR", "NLL", "Likelihood",
+                   "NLL.IAs", paste0("NLL.Count", 1:nrow(count.data)), paste0("NLL.N", 1:nrow(abs.abundance)), "NLL.GR", "NLL", "Likelihood",
                    "Max_Dep",paste0("status", target.Yr), paste("status", output.Yrs, sep = ""), "draw", "save")
 
     proc_error_save <- matrix(NA, nrow = n_resamples, ncol = projection.Yrs-1)

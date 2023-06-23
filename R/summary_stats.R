@@ -71,7 +71,7 @@ summary_table <- function( SIR, file_name = NULL){
 
 
   pop_vars <- c("K", "Nmin", paste0("N", years))
-  depletion_vars <- c("Max_Dep", paste0("status", years),"P50","sigma", paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
+  depletion_vars <- c("Max_Dep", paste0("status", years),"P50","var_N", paste0("q_IA1", 1:num.IA), paste0("q_IA2", 1:num.IA), "add_VAR_IA")
 
   results <- data.frame(matrix(NA, nrow = length(vars), ncol = 8))
   colnames(results) <- c("Parameter","Mean", "Median", "2.5% CI", "25% CI", "75% CI", "97.5% CI", "Unique")
@@ -97,24 +97,25 @@ summary_table <- function( SIR, file_name = NULL){
   q2_est <- SIR$resamples_output[, q2_cols]
   q2_est <- as.matrix(q2_est, ncol = length(q2_cols))
 
-  # -- Make var-covar into wide and tall with cov = 0 for different indices
-  rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs,IndYear))
+  ## Make var-covar into wide and tall with cov = 0 for different indices
+  rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs))
   rel.var.covar.wide <- rel.var.covar.tall[which(rel.abundance$Index == 1),]
   rel.var.covar.wide <- rel.var.covar.wide[1:nrow(rel.var.covar.wide),1:nrow(rel.var.covar.wide)]
 
-  rel.hess.wide <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
+  rel.hess.tall <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
 
   if(num.IA>1){
-    for(i in 2:length(unique(rel.abundance$Index))){
-      var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
-      var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
-      colnames(var.cov.tmp) <- NULL
-      rownames(var.cov.tmp) <- NULL
-      rel.var.covar.wide <- Matrix::bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
-      rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
-    }
+      for(i in 2:length(unique(rel.abundance$Index))){
+          var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
+          var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
+          colnames(var.cov.tmp) <- NULL
+          rownames(var.cov.tmp) <- NULL
+          rel.var.covar.wide <- Matrix::bdiag(as.matrix(rel.var.covar.wide), var.cov.tmp)
+          rel.hess.tall <- plyr::rbind.fill.matrix(rel.hess.tall, solve(var.cov.tmp))
+      }
   }
   rel.var.covar.wide <- as.matrix(rel.var.covar.wide)
+  rel.hess.wide <- solve(rel.var.covar.wide)
 
   # -- Loop through posterior draws
   for(j in 1:nrow(SIR$resamples_trajectories)){

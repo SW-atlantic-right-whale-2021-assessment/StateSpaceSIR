@@ -5,11 +5,6 @@
 
 using namespace Rcpp;
 
-#ifdef RCPP_USE_GLOBAL_ROSTREAM
-Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
-Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
-#endif
-
 // GENERALIZED_LOGISTIC
 List GENERALIZED_LOGISTIC(int allee_model, double r_max, double K, double N1, double z, double P50, double start_yr, double num_Yrs, NumericVector catches, NumericVector proc_error, double MVP);
 RcppExport SEXP _StateSpaceSIR_GENERALIZED_LOGISTIC(SEXP allee_modelSEXP, SEXP r_maxSEXP, SEXP KSEXP, SEXP N1SEXP, SEXP zSEXP, SEXP P50SEXP, SEXP start_yrSEXP, SEXP num_YrsSEXP, SEXP catchesSEXP, SEXP proc_errorSEXP, SEXP MVPSEXP) {

@@ -310,7 +310,8 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
 
         # Get IOA specifications
         rel.abundance.sub <- rel.abundance[which(rel.abundance$Index == i),]
-        rel.var.covar.wide.sub <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
+        rel.var.covar.sub <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
+        rel.var.covar.sub <- rel.var.covar.sub[,1:nrow(rel.var.covar.sub)]
         IA.yrs <- rel.abundance.sub$Year
         IA.yr.range[[i]] <- c((min(IA.yrs)):(max(IA.yrs))) # Range +- 1 of IOA years
 
@@ -361,8 +362,8 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
             for(j in 1:nrow(IA_pread[[i]])){ # Loop across posterior draws
                 IA_posterior_pred[[i]][j,] <- exp(MASS::mvrnorm(
                     n = 1,
-                    mu = as.numeric(log(IA_pread[[i]][j,IndYear]) - diag(rel.var.covar.wide)/2),
-                    Sigma = rel.var.covar.wide))
+                    mu = as.numeric(log(IA_pread[[i]][j,IndYear]) - diag(rel.var.covar.sub)/2),
+                    Sigma = rel.var.covar.sub))
             }
 
             IA_posterior_pred[[i]] <- data.frame(IA_posterior_pred[[i]])
@@ -558,13 +559,13 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
         q2_est <- as.matrix(q2_est, ncol = length(q2_cols))
 
         # -- Make var-covar into wide and tall with cov = 0 for different indices
-        rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs,IndYear))
+        rel.var.covar.tall <-  subset(rel.abundance, select = -c(Index,Year,IA.obs))
         rel.var.covar.wide <- rel.var.covar.tall[which(rel.abundance$Index == 1),]
         rel.var.covar.wide <- rel.var.covar.wide[1:nrow(rel.var.covar.wide),1:nrow(rel.var.covar.wide)]
 
-        rel.hess.wide <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
+        rel.hess.tall <- solve(rel.var.covar.wide[1:nrow(rel.var.covar.wide), 1: nrow(rel.var.covar.wide)])
 
-        if(num.IA>1){
+        if(max(num.IA)>1){
             for(i in 2:length(unique(rel.abundance$Index))){
                 var.cov.tmp <- as.matrix(rel.var.covar.tall[which(rel.abundance$Index == i),])
                 var.cov.tmp <- var.cov.tmp[1:nrow(var.cov.tmp), 1:nrow(var.cov.tmp)]
@@ -575,6 +576,7 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
             }
         }
         rel.var.covar.wide <- as.matrix(rel.var.covar.wide)
+        rel.hess.wide <- solve(rel.var.covar.wide)
 
         # -- Loop through posterior draws
         for(j in 1:nrow(SIR[[k]]$resamples_trajectories)){
