@@ -1131,13 +1131,13 @@ summary_sir <- function(x, object = "USERDEFINED", file_name = "NULL") {
     }
 
     row_names <- c("mean", "median",
-                   "2.5%PI", "97.5%PI",
-                   "5%PI", "95%PI",
+                   "2.5%PI", "25%PI",
+                   "75%PI", "97.5%PI",
                    "min", "max", "n")
 
     output_summary <- matrix(nrow = length(row_names), ncol = dim(x)[2])
     output_summary[1, ] <- sapply(x, mean)
-    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5, 0.025, 0.975, 0.05, 0.95))
+    output_summary[2:6, ] <- sapply(x, quantile, probs= c(0.5, 0.025, 0.25, 0.75, 0.975))
     output_summary[7, ] <- sapply(x, min)
     output_summary[8, ] <- sapply(x, max)
     output_summary[9, ] <- sapply(x, length)
