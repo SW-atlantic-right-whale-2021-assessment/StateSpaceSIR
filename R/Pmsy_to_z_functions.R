@@ -124,5 +124,5 @@ pmsy_z_haider <- function(z,Pmsy, k = 100, r = .1, q = .02) {
     with(attributes(check), gradient)[1]
 }
 
-# uniroot(pmsy_z_hilborn, Pmsy=.4, lower=.1,upper=100)$root
+uniroot(pmsy_z_haider, Pmsy=.7, lower=.1,upper=100)$root
 
