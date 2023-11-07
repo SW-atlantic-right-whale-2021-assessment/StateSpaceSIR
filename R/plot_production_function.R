@@ -25,7 +25,7 @@ hilborn <- function(nmin = pmin * Kinit, n = 50){
 }
 
 
-plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55"), file_name = NULL){
+plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55", "#3185FC", "#2F0A28"), file_name = NULL, model_names = NULL){
 
     # Set up objects
     Nvec <- seq(from = 0, to = 100, length.out = 100)
@@ -37,27 +37,27 @@ plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55"), file_na
 
         # - No Allee
         if(SIRlist[[i]]$inputs$allee_model == 0 | is.null(SIRlist[[i]]$inputs$allee_model)){
-            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z))
+            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) SIRlist[[i]]$resamples_output$K/100 * surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z))
         }
 
         # - Hilborn Allee
         if(SIRlist[[i]]$inputs$allee_model == 1){
-            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * hilborn(nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
+            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) SIRlist[[i]]$resamples_output$K/100 * surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * hilborn(nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
         }
 
         # - Logistic Allee
-        if(SIRlist[[i]]$inputs$allee_model == 1){
-            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * logistic(nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
+        if(SIRlist[[i]]$inputs$allee_model == 2){
+            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) SIRlist[[i]]$resamples_output$K/100 * surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * logistic(nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
         }
 
         # - Lin Li Allee
-        if(SIRlist[[i]]$inputs$allee_model == 1){
-            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * linli(k = 100, nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
+        if(SIRlist[[i]]$inputs$allee_model == 3){
+            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) SIRlist[[i]]$resamples_output$K/100 * surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * linli(k = 100, nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
         }
 
         # - Haider Allee
-        if(SIRlist[[i]]$inputs$allee_model == 1){
-            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * haider(k = 100, nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
+        if(SIRlist[[i]]$inputs$allee_model == 4){
+            surplus_prod_trajectories[[i]] <- sapply(Nvec, function(x) SIRlist[[i]]$resamples_output$K/100 * surplus(r = SIRlist[[i]]$resamples_output$r_max, k = 100, n = x, z = SIRlist[[i]]$resamples_output$z) * haider(k = 100, nmin = SIRlist[[i]]$resamples_output$P50 * 100, n = x))
         }
 
 
@@ -67,11 +67,13 @@ plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55"), file_na
                        "25%PI", "75%PI",
                        "min", "max")
 
+        surplus_prod_trajectories[[i]][is.nan(surplus_prod_trajectories[[i]])] <- NA
+
         output_summary[[i]] <- matrix(nrow = length(row_names), ncol = length(Nvec))
-        output_summary[[i]][1, ] <- colMeans(surplus_prod_trajectories[[i]])
-        output_summary[[i]][2:6, ] <- apply(surplus_prod_trajectories[[i]], 2, function(x) quantile(x, probs= c(0.5,  0.025, 0.975, 0.25, 0.75)))
-        output_summary[[i]][7, ] <- apply(surplus_prod_trajectories[[i]], 2, min)
-        output_summary[[i]][8, ] <- apply(surplus_prod_trajectories[[i]], 2, max)
+        output_summary[[i]][1, ] <- colMeans(surplus_prod_trajectories[[i]], na.rm = TRUE)
+        output_summary[[i]][2:6, ] <- apply(surplus_prod_trajectories[[i]], 2, function(x) quantile(x, probs= c(0.5,  0.025, 0.975, 0.25, 0.75), na.rm = TRUE))
+        output_summary[[i]][7, ] <- apply(surplus_prod_trajectories[[i]], 2, min, na.rm = TRUE)
+        output_summary[[i]][8, ] <- apply(surplus_prod_trajectories[[i]], 2, max, na.rm = TRUE)
 
         output_summary[[i]] <- as.data.frame(output_summary[[i]])
         rownames(output_summary[[i]]) <- row_names
@@ -80,17 +82,17 @@ plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55"), file_na
 
 
     # Get plotting dimensions
-    minprod <- min(sapply(output_summary, function(x) min(x[3,])))
-    maxprod <- max(sapply(output_summary, function(x) max(x[4,])))
+    minprod <- min(sapply(output_summary, function(x) min(x[5,])))
+    maxprod <- max(sapply(output_summary, function(x) max(x[6,])))
 
     # Set up plot save
     # Plot trajectory
-    for(j in 1: (1 + as.numeric(!is.null(file_name)) * 2)){
+    for(j in 1: (as.numeric(!is.null(file_name)) * 2)){
 
         # PNG
         if(j == 2){
             filename <- paste0(file_name, "_surplus_production_function", ".png")
-            png( file = filename , width=7.5, height = 100 / 25.4, family = "serif", units = "in", res = 300)
+            png( file = filename, width=6.5, height = 5, family = "serif", units = "in", res = 300)
         }
 
         # Plot suplus production function
@@ -100,22 +102,22 @@ plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55"), file_na
              xlab = NA, ylab = NA, font = 2)
 
         abline(h = 0, col = "grey60")
-        mtext(side = 2, "Surplus production (N)", line = 1.6, font = 2, adj = 0.6)
-        mtext(side = 1, "Depletion (%)", line = 1.6, font = 2)
+        mtext(side = 2, "Surplus production (N)", line = 2.2, font = 2, adj = 0.6)
+        mtext(side = 1, "Depletion (%)", line = 2, font = 2)
 
         # - Loop across models
         for(i in 1:length(output_summary)){
 
-            # - Credible interval
-            polygon(
-                x = c(Nvec,rev(Nvec)),
-                y = c(output_summary[[i]][3, ],rev(output_summary[[i]][4, ])),
-                col = adjustcolor(coolors[i], alpha = 0.2), border = NA) # 95% CI
+            # # - Credible interval
+            # polygon(
+            #   x = c(Nvec,rev(Nvec)),
+            #   y = c(output_summary[[i]][3, ],rev(output_summary[[i]][4, ])),
+            #   col = adjustcolor(coolors[i], alpha = 0.2), border = NA) # 95% CI
 
             polygon(
                 x = c(Nvec,rev(Nvec)),
                 y = c(output_summary[[i]][5, ], rev(output_summary[[i]][6, ])),
-                col = adjustcolor(coolors[i], alpha = 0.5), border = NA) # 50% CI
+                col = adjustcolor(coolors[i], alpha = 0.2), border = NA) # 50% CI
 
             # Median
             lines( x = Nvec, y = output_summary[[i]][2, ], lwd = 3, col = coolors[i]) # Median
@@ -131,7 +133,6 @@ plot_suplus_prod <- function(SIRlist, coolors = c("#941B0C", "#104F55"), file_na
             dev.off()
         }
     }
-
 }
 
 

@@ -208,7 +208,7 @@ waic <- function( SIR ){
     # Get WAIC
     waic <- c()
     for(i in 1:length(SIR)){
-        nll_cols <- c(paste0("NLL.IAs", unique(SIR[[i]]$inputs$rel.abundance$Index)), paste0("NLL.N", 1:nrow(SIR[[i]]$inputs$abs.abundance)), "NLL.GR") # add paste0("NLL.Count", 1:nrow(SIR[[i]]$inputs$count.data))
+        nll_cols <- sapply(c("NLL.IAs", "NLL.N", "NLL.GR"), function(x) grep(x,colnames(SIR[[i]]$resamples_output)))
         waic[i] <- -2*sum(log(colMeans(exp(SIR[[i]]$resamples_output[,nll_cols])))) + 2*sum(apply(SIR[[i]]$resamples_output[,nll_cols], 2, var))
     }
 
