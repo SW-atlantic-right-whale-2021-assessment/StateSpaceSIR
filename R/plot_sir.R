@@ -473,7 +473,7 @@ plot_ioa <- function(SIR, file_name = NULL, ioa_names = NULL, posterior_pred = T
 #'
 #' @return Returns and saves a figure with the posterior densities of parameters.
 #' @export
-plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, priors = NULL, inc_reference = FALSE, probs = c(0.025, 0.975) ){
+plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, priors = NULL, inc_reference = FALSE, probs = c(0.025, 0.975), target = TRUE){
 
     # Make into list
     if(class(SIR) == "SIR"){
@@ -514,8 +514,16 @@ plot_density <- function(SIR, file_name = NULL, lower = NULL, upper = NULL, prio
 
     # Vars of interest
     num.IA <- sort(unique(c( sapply(SIR, function(x) x$inputs$rel.abundance$Index))))
-    years <- sort(unique(c( sapply(SIR, function(x) x$inputs$target.Yr),
-                            sapply(SIR, function(x) x$inputs$output.Years))))
+    if(target){
+        years <- sort(unique(unlist(c( sapply(SIR, function(x) x$inputs$target.Yr),
+                                       sapply(SIR, function(x) x$inputs$output.Years)))))
+    }
+    if(!target){
+
+        years <- sort(unique(unlist(c(
+            #sapply(SIR, function(x) x$inputs$target.Yr),
+            sapply(SIR, function(x) x$inputs$output.Years)))))
+    }
 
     if(SIR[[1]]$inputs$allee_model == 0){
         vars <- c("r_max", "K", "Pmsy", "Nmin", "var_N", paste0("N", years), "Max_Dep", paste0("status", years), paste0("q_IA1", num.IA), paste0("q_IA2", num.IA), "add_VAR_IA")
